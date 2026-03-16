@@ -1,9 +1,44 @@
+"use client";
+
+import { DndContext, type DragEndEvent } from "@dnd-kit/core";
+import { useMemo, useState } from "react";
 import { ROLE_LIBRARY } from "@/data/roles";
-import { MeetingSlot } from "./meeting-slot";
-import { RoleCard } from "./role-card";
+import { createInitialSlots, getAssignedRoleIds } from "@/lib/council";
+import type { MeetingSlot } from "@/types/council";
+import { MeetingGrid } from "./meeting-grid";
+import { RolePool } from "./role-pool";
 import { TopicInput } from "./topic-input";
 
 export function PrepHall() {
+  const [slots, setSlots] = useState<MeetingSlot[]>(createInitialSlots);
+  const [topic, setTopic] = useState("");
+
+  const assignedRoleIds = useMemo(() => getAssignedRoleIds(slots), [slots]);
+  const selectedCount = assignedRoleIds.size;
+  const canStart = selectedCount > 0 && topic.trim().length > 0;
+
+  function handleDragEnd(event: DragEndEvent) {
+    const roleId = event.active.data.current?.roleId as string | undefined;
+    const slotId = event.over?.id as string | undefined;
+
+    if (!roleId || !slotId) return;
+    if (assignedRoleIds.has(roleId)) return;
+
+    setSlots((currentSlots) =>
+      currentSlots.map((slot) =>
+        slot.id === slotId ? { ...slot, roleId } : slot
+      )
+    );
+  }
+
+  function handleRemoveRole(slotId: string) {
+    setSlots((currentSlots) =>
+      currentSlots.map((slot) =>
+        slot.id === slotId ? { ...slot, roleId: null } : slot
+      )
+    );
+  }
+
   return (
     <main className="flex flex-1 flex-col">
       <section className="pt-8 md:pt-12">
@@ -23,50 +58,26 @@ export function PrepHall() {
         </div>
       </section>
 
-      <section className="mt-10 grid gap-8 lg:grid-cols-[1.15fr_0.85fr]">
-        <div className="space-y-5">
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-lg font-semibold text-white">会议坑位</h2>
-              <p className="mt-1 text-sm text-white/45">
-                后续这里将支持拖拽入坑、替换、排序与移除
-              </p>
-            </div>
-            <div className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-white/55">
-              3 - 4 位参会角色
-            </div>
+      <DndContext onDragEnd={handleDragEnd}>
+        <section className="mt-10 grid gap-8 lg:grid-cols-[1.15fr_0.85fr]">
+          <div className="space-y-5">
+            <MeetingGrid
+              slots={slots}
+              roles={ROLE_LIBRARY}
+              onRemoveRole={handleRemoveRole}
+            />
+
+            <TopicInput
+              value={topic}
+              onChange={setTopic}
+              selectedCount={selectedCount}
+              canStart={canStart}
+            />
           </div>
 
-          <div className="grid gap-4 md:grid-cols-2">
-            <MeetingSlot index={0} />
-            <MeetingSlot index={1} />
-            <MeetingSlot index={2} />
-            <MeetingSlot index={3} />
-          </div>
-
-          <TopicInput />
-        </div>
-
-        <div className="rounded-[32px] border border-white/10 bg-white/[0.04] p-5 backdrop-blur-2xl">
-          <div className="mb-4 flex items-end justify-between gap-4">
-            <div>
-              <h2 className="text-lg font-semibold text-white">角色库</h2>
-              <p className="mt-1 text-sm text-white/45">
-                当前先展示静态角色卡，下一步接入 DnD 拖拽
-              </p>
-            </div>
-            <div className="rounded-full border border-white/10 bg-black/20 px-3 py-1 text-xs text-white/50">
-              {ROLE_LIBRARY.length} Roles
-            </div>
-          </div>
-
-          <div className="grid gap-4 sm:grid-cols-2">
-            {ROLE_LIBRARY.map((role) => (
-              <RoleCard key={role.id} role={role} />
-            ))}
-          </div>
-        </div>
-      </section>
+          <RolePool roles={ROLE_LIBRARY} assignedRoleIds={assignedRoleIds} />
+        </section>
+      </DndContext>
     </main>
   );
 }
