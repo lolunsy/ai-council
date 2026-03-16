@@ -7,11 +7,13 @@ import { cn } from "@/lib/utils";
 interface DraggableRoleCardProps {
   role: CouncilRole;
   disabled?: boolean;
+  overlay?: boolean;
 }
 
 export function DraggableRoleCard({
   role,
   disabled = false,
+  overlay = false,
 }: DraggableRoleCardProps) {
   const { attributes, listeners, setNodeRef, transform, isDragging } =
     useDraggable({
@@ -20,27 +22,30 @@ export function DraggableRoleCard({
         type: "role",
         roleId: role.id,
       },
-      disabled,
+      disabled: disabled || overlay,
     });
 
-  const style = transform
-    ? {
-        transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`,
-      }
-    : undefined;
+  const style =
+    transform && !overlay
+      ? {
+          transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`,
+        }
+      : undefined;
 
   return (
     <button
-      ref={setNodeRef}
+      ref={overlay ? undefined : setNodeRef}
       style={style}
       type="button"
       disabled={disabled}
-      {...listeners}
-      {...attributes}
+      {...(!overlay ? listeners : {})}
+      {...(!overlay ? attributes : {})}
       className={cn(
         "group relative w-full overflow-hidden rounded-3xl border border-white/10 bg-white/5 p-4 text-left backdrop-blur-xl transition-all duration-300",
         "hover:-translate-y-1 hover:border-white/20 hover:bg-white/[0.07]",
-        isDragging && "scale-[1.02] border-cyan-300/30 shadow-[0_18px_50px_rgba(34,211,238,0.12)]",
+        isDragging && !overlay && "opacity-35",
+        overlay &&
+          "cursor-grabbing border-cyan-300/40 bg-white/[0.08] shadow-[0_24px_80px_rgba(34,211,238,0.18)] ring-1 ring-cyan-300/20",
         disabled &&
           "cursor-not-allowed border-white/6 bg-white/[0.02] opacity-40 hover:translate-y-0 hover:border-white/6 hover:bg-white/[0.02]"
       )}
@@ -51,8 +56,10 @@ export function DraggableRoleCard({
           role.color
         )}
       />
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-white/20" />
+
       <div className="relative z-10 flex items-start gap-4">
-        <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-white/10 bg-black/20 text-2xl shadow-[0_10px_30px_rgba(0,0,0,0.2)]">
+        <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-white/10 bg-black/25 text-2xl shadow-[0_10px_30px_rgba(0,0,0,0.22)]">
           {role.avatar}
         </div>
 
@@ -85,3 +92,4 @@ export function DraggableRoleCard({
     </button>
   );
 }
+

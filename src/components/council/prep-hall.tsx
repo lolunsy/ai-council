@@ -1,10 +1,16 @@
 "use client";
 
-import { DndContext, type DragEndEvent } from "@dnd-kit/core";
+import {
+  DndContext,
+  DragOverlay,
+  type DragEndEvent,
+  type DragStartEvent,
+} from "@dnd-kit/core";
 import { useMemo, useState } from "react";
 import { ROLE_LIBRARY } from "@/data/roles";
-import { createInitialSlots, getAssignedRoleIds } from "@/lib/council";
+import { createInitialSlots, getAssignedRoleIds, getRoleById } from "@/lib/council";
 import type { MeetingSlot } from "@/types/council";
+import { DraggableRoleCard } from "./draggable-role-card";
 import { MeetingGrid } from "./meeting-grid";
 import { RolePool } from "./role-pool";
 import { TopicInput } from "./topic-input";
@@ -12,14 +18,23 @@ import { TopicInput } from "./topic-input";
 export function PrepHall() {
   const [slots, setSlots] = useState<MeetingSlot[]>(createInitialSlots);
   const [topic, setTopic] = useState("");
+  const [activeRoleId, setActiveRoleId] = useState<string | null>(null);
 
   const assignedRoleIds = useMemo(() => getAssignedRoleIds(slots), [slots]);
   const selectedCount = assignedRoleIds.size;
   const canStart = selectedCount > 0 && topic.trim().length > 0;
+  const activeRole = getRoleById(ROLE_LIBRARY, activeRoleId);
+
+  function handleDragStart(event: DragStartEvent) {
+    const roleId = event.active.data.current?.roleId as string | undefined;
+    setActiveRoleId(roleId ?? null);
+  }
 
   function handleDragEnd(event: DragEndEvent) {
     const roleId = event.active.data.current?.roleId as string | undefined;
     const slotId = event.over?.id as string | undefined;
+
+    setActiveRoleId(null);
 
     if (!roleId || !slotId) return;
     if (assignedRoleIds.has(roleId)) return;
@@ -58,7 +73,7 @@ export function PrepHall() {
         </div>
       </section>
 
-      <DndContext onDragEnd={handleDragEnd}>
+      <DndContext onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
         <section className="mt-10 grid gap-8 lg:grid-cols-[1.15fr_0.85fr]">
           <div className="space-y-5">
             <MeetingGrid
@@ -77,7 +92,12 @@ export function PrepHall() {
 
           <RolePool roles={ROLE_LIBRARY} assignedRoleIds={assignedRoleIds} />
         </section>
+
+        <DragOverlay>
+          {activeRole ? <DraggableRoleCard role={activeRole} overlay /> : null}
+        </DragOverlay>
       </DndContext>
     </main>
   );
 }
+
