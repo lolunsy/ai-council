@@ -1,0 +1,58 @@
+import type { CouncilRole } from "@/types/council";
+
+export const ROLE_LIBRARY: CouncilRole[] = [
+  {
+    id: "cfo",
+    name: "CFO",
+    title: "极度抠门的财务总监",
+    bias: "finance",
+    description: "对 ROI 极端敏感，天然反对一切不能快速回本的投入。",
+    avatar: "💼",
+    color: "from-emerald-500/20 to-emerald-300/5",
+  },
+  {
+    id: "pm",
+    name: "PM",
+    title: "激进增长型产品经理",
+    bias: "product",
+    description: "偏好冒险与增长，愿意用成本换市场声量和用户心智。",
+    avatar: "🚀",
+    color: "from-sky-500/20 to-sky-300/5",
+  },
+  {
+    id: "legal",
+    name: "Legal",
+    title: "极度严谨的法务负责人",
+    bias: "legal",
+    description: "优先识别合规、合同、版权与潜在诉讼风险。",
+    avatar: "⚖️",
+    color: "from-violet-500/20 to-violet-300/5",
+  },
+  {
+    id: "brand",
+    name: "Brand",
+    title: "审美挑剔的品牌总监",
+    bias: "marketing",
+    description: "关注品牌调性、一致性与外部传播势能。",
+    avatar: "🎨",
+    color: "from-rose-500/20 to-rose-300/5",
+  },
+  {
+    id: "ceo",
+    name: "CEO",
+    title: "结果导向的战略掌舵者",
+    bias: "strategy",
+    description: "会站在长期战略、组织协同与关键窗口期做判断。",
+    avatar: "🧠",
+    color: "from-amber-500/20 to-amber-300/5",
+  },
+  {
+    id: "ops",
+    name: "OPS",
+    title: "现实主义的运营负责人",
+    bias: "operations",
+    description: "关注执行链路、资源配置、交付复杂度与落地效率。",
+    avatar: "🛠️",
+    color: "from-cyan-500/20 to-cyan-300/5",
+  },
+];

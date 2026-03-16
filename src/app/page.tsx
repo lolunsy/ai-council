@@ -1,14 +1,10 @@
-import Image from 'next/image';
+import { AppShell } from "@/components/layout/app-shell";
+import { PrepHall } from "@/components/council/prep-hall";
 
-export default function Home() {
+export default function HomePage() {
   return (
-    <div className="min-h-screen bg-gray-100">
-      <main className="container mx-auto px-4 py-8">
-        <h1 className="text-4xl font-bold text-center mb-8">Welcome to Next.js</h1>
-        <p className="text-center text-gray-600">
-          This is a sample Next.js application created with App Router.
-        </p>
-      </main>
-    </div>
+    <AppShell>
+      <PrepHall />
+    </AppShell>
   );
 }
