@@ -19,11 +19,18 @@ import { MeetingGrid } from "./meeting-grid";
 import { RolePool } from "./role-pool";
 import { TopicInput } from "./topic-input";
 
+import type { MeetingRoleInput } from "@/types/meeting";
+
 interface PrepHallProps {
-  onStartMeeting: () => void;
+  onStartMeeting: (input: {
+    topic: string;
+    roles: MeetingRoleInput[];
+  }) => void;
+  isStarting: boolean;
+  errorMessage: string;
 }
 
-export function PrepHall({ onStartMeeting }: PrepHallProps) {
+export function PrepHall({ onStartMeeting, isStarting, errorMessage }: PrepHallProps) {
   const [slots, setSlots] = useState<MeetingSlot[]>(createInitialSlots);
   const [topic, setTopic] = useState("");
   const [activeRoleId, setActiveRoleId] = useState<string | null>(null);
@@ -32,6 +39,24 @@ export function PrepHall({ onStartMeeting }: PrepHallProps) {
   const selectedCount = assignedRoleIds.size;
   const canStart = selectedCount > 0 && topic.trim().length > 0;
   const activeRole = getRoleById(ROLE_LIBRARY, activeRoleId);
+
+  function handleStartMeeting() {
+    if (!canStart) return;
+    
+    const selectedRoles = Array.from(assignedRoleIds).map((roleId) => {
+      const role = getRoleById(ROLE_LIBRARY, roleId);
+      return {
+        id: role.id,
+        name: role.name,
+        prompt: role.prompt,
+      };
+    });
+    
+    onStartMeeting({
+      topic: topic.trim(),
+      roles: selectedRoles,
+    });
+  }
 
   function handleDragStart(event: DragStartEvent) {
     const roleId = event.active.data.current?.roleId as string | undefined;
@@ -95,7 +120,9 @@ export function PrepHall({ onStartMeeting }: PrepHallProps) {
               onChange={setTopic}
               selectedCount={selectedCount}
               canStart={canStart}
-              onStart={onStartMeeting}
+              onStart={handleStartMeeting}
+              isStarting={isStarting}
+              errorMessage={errorMessage}
             />
           </div>
 
