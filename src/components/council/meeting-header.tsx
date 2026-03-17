@@ -4,12 +4,14 @@ interface MeetingHeaderProps {
   topic: string;
   participantRoleIds: string[];
   onBack: () => void;
+  statusText: string;
 }
 
 export function MeetingHeader({
   topic,
   participantRoleIds,
   onBack,
+  statusText,
 }: MeetingHeaderProps) {
   return (
     <section className="pt-8 md:pt-10">
@@ -38,13 +40,24 @@ export function MeetingHeader({
           </button>
         </div>
 
-        <div className="rounded-[24px] border border-white/8 bg-black/10 p-4">
-          <p className="text-xs uppercase tracking-[0.18em] text-white/40">
-            本次议题
-          </p>
-          <p className="mt-2 text-lg font-medium leading-8 text-white">
-            {topic}
-          </p>
+        <div className="grid gap-4 lg:grid-cols-[1.15fr_0.85fr]">
+          <div className="rounded-[24px] border border-white/8 bg-black/10 p-4">
+            <p className="text-xs uppercase tracking-[0.18em] text-white/40">
+              本次议题
+            </p>
+            <p className="mt-2 text-lg font-medium leading-8 text-white">
+              {topic}
+            </p>
+          </div>
+
+          <div className="rounded-[24px] border border-cyan-300/12 bg-cyan-400/[0.05] p-4">
+            <p className="text-xs uppercase tracking-[0.18em] text-cyan-100/60">
+              会议状态
+            </p>
+            <p className="mt-2 text-base font-medium leading-7 text-cyan-50">
+              {statusText}
+            </p>
+          </div>
         </div>
 
         <ParticipantStrip roleIds={participantRoleIds} />
@@ -52,3 +65,4 @@ export function MeetingHeader({
     </section>
   );
 }
+
