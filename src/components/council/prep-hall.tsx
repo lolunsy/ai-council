@@ -39,7 +39,6 @@ export function PrepHall({
   const [slots, setSlots] = useState<MeetingSlot[]>(createInitialSlots);
   const [topic, setTopic] = useState("");
   const [activeRoleId, setActiveRoleId] = useState<string | null>(null);
-  const [selectedModel, setSelectedModel] = useState(DEFAULT_MEETING_MODEL);
 
   const assignedRoleIds = useMemo(() => getAssignedRoleIds(slots), [slots]);
   const selectedCount = assignedRoleIds.size;
@@ -90,7 +89,7 @@ export function PrepHall({
     onStartMeeting({
       topic: topic.trim(),
       roles: selectedRoles,
-      model: selectedModel,
+      model: DEFAULT_MEETING_MODEL,
     });
   }
 
@@ -134,8 +133,6 @@ export function PrepHall({
               selectedCount={selectedCount}
               canStart={canStart}
               onStart={handleStart}
-              model={selectedModel}
-              onModelChange={setSelectedModel}
               isStarting={isStarting}
             />
           </div>
