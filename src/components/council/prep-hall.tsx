@@ -7,8 +7,8 @@ import {
   type DragStartEvent,
 } from "@dnd-kit/core";
 import { useMemo, useState } from "react";
-import { ROLE_LIBRARY } from "@/data/roles";
 import { DEFAULT_MEETING_MODEL } from "@/data/models";
+import { ROLE_LIBRARY } from "@/data/roles";
 import {
   createInitialSlots,
   getAssignedRoleIds,
@@ -18,7 +18,6 @@ import type { MeetingRoleInput } from "@/types/meeting";
 import type { MeetingSlot } from "@/types/council";
 import { DraggableRoleCard } from "./draggable-role-card";
 import { MeetingGrid } from "./meeting-grid";
-import { ModelSelector } from "./model-selector";
 import { RolePool } from "./role-pool";
 import { TopicInput } from "./topic-input";
 
@@ -39,8 +38,8 @@ export function PrepHall({
 }: PrepHallProps) {
   const [slots, setSlots] = useState<MeetingSlot[]>(createInitialSlots);
   const [topic, setTopic] = useState("");
-  const [model, setModel] = useState(DEFAULT_MEETING_MODEL);
   const [activeRoleId, setActiveRoleId] = useState<string | null>(null);
+  const [selectedModel, setSelectedModel] = useState(DEFAULT_MEETING_MODEL);
 
   const assignedRoleIds = useMemo(() => getAssignedRoleIds(slots), [slots]);
   const selectedCount = assignedRoleIds.size;
@@ -91,7 +90,7 @@ export function PrepHall({
     onStartMeeting({
       topic: topic.trim(),
       roles: selectedRoles,
-      model,
+      model: selectedModel,
     });
   }
 
@@ -135,8 +134,8 @@ export function PrepHall({
               selectedCount={selectedCount}
               canStart={canStart}
               onStart={handleStart}
-              model={model}
-              onModelChange={setModel}
+              model={selectedModel}
+              onModelChange={setSelectedModel}
               isStarting={isStarting}
             />
           </div>
