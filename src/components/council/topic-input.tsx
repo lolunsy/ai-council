@@ -3,6 +3,7 @@ interface TopicInputProps {
   onChange: (value: string) => void;
   selectedCount: number;
   canStart: boolean;
+  onStart: () => void;
 }
 
 export function TopicInput({
@@ -10,6 +11,7 @@ export function TopicInput({
   onChange,
   selectedCount,
   canStart,
+  onStart,
 }: TopicInputProps) {
   return (
     <div className="rounded-[28px] border border-white/10 bg-white/[0.04] p-3 shadow-[0_20px_80px_rgba(0,0,0,0.35)] backdrop-blur-2xl">
@@ -34,6 +36,7 @@ export function TopicInput({
           <button
             type="button"
             disabled={!canStart}
+            onClick={onStart}
             className="inline-flex h-12 min-w-[118px] items-center justify-center rounded-2xl border border-cyan-300/20 bg-cyan-400/15 px-5 text-sm font-medium text-cyan-100 transition hover:bg-cyan-400/20 disabled:cursor-not-allowed disabled:border-white/10 disabled:bg-white/5 disabled:text-white/35"
           >
             开始开会
@@ -43,4 +46,5 @@ export function TopicInput({
     </div>
   );
 }
+
 

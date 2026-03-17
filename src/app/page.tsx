@@ -1,10 +1,10 @@
 import { AppShell } from "@/components/layout/app-shell";
-import { MeetingRoom } from "@/components/council/meeting-room";
+import { PrepHall } from "@/components/council/prep-hall";
 
 export default function HomePage() {
   return (
     <AppShell>
-      <MeetingRoom />
+      <PrepHall />
     </AppShell>
   );
 }
