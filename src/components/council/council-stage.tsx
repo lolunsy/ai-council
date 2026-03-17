@@ -3,15 +3,26 @@
 import { AnimatePresence } from "framer-motion";
 import { useState } from "react";
 import { startMeetingRequest } from "@/lib/api";
-import type { FinalDecision, MeetingReport, MeetingRoleInput } from "@/types/meeting";
+import type {
+  FinalDecision,
+  MeetingReport,
+  MeetingRoleInput,
+} from "@/types/meeting";
 import { MeetingRoom } from "./meeting-room";
 import { PrepHall } from "./prep-hall";
+
+interface MeetingRound {
+  id: string;
+  topic: string;
+  followUp?: string;
+  reports: MeetingReport[];
+  finalDecision: FinalDecision;
+}
 
 interface MeetingSessionData {
   topic: string;
   roles: MeetingRoleInput[];
-  reports: MeetingReport[];
-  finalDecision: FinalDecision;
+  rounds: MeetingRound[];
 }
 
 export function CouncilStage() {
@@ -36,8 +47,14 @@ export function CouncilStage() {
       setSessionData({
         topic: input.topic,
         roles: input.roles,
-        reports: result.reports,
-        finalDecision: result.finalDecision,
+        rounds: [
+          {
+            id: `round-${Date.now()}`,
+            topic: input.topic,
+            reports: result.reports,
+            finalDecision: result.finalDecision,
+          },
+        ],
       });
 
       setIsDiscussing(true);
@@ -59,10 +76,22 @@ export function CouncilStage() {
       followUp: message,
     });
 
-    setSessionData({
-      ...sessionData,
-      reports: result.reports,
-      finalDecision: result.finalDecision,
+    setSessionData((current) => {
+      if (!current) return current;
+
+      return {
+        ...current,
+        rounds: [
+          ...current.rounds,
+          {
+            id: `round-${Date.now()}`,
+            topic: current.topic,
+            followUp: message,
+            reports: result.reports,
+            finalDecision: result.finalDecision,
+          },
+        ],
+      };
     });
   }
 
@@ -73,8 +102,7 @@ export function CouncilStage() {
           key="meeting-room"
           topic={sessionData.topic}
           roles={sessionData.roles}
-          reports={sessionData.reports}
-          finalDecision={sessionData.finalDecision}
+          rounds={sessionData.rounds}
           onBack={() => setIsDiscussing(false)}
           onFollowUp={handleFollowUp}
         />
@@ -89,4 +117,5 @@ export function CouncilStage() {
     </AnimatePresence>
   );
 }
+
 

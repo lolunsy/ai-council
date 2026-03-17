@@ -14,12 +14,20 @@ import { MeetingMiniBar } from "./meeting-mini-bar";
 import { ModeratorNoteCard } from "./moderator-note-card";
 import { ModeratorPanel } from "./moderator-panel";
 import { ReportCard } from "./report-card";
+import { RoundDivider } from "./round-divider";
+
+interface MeetingRound {
+  id: string;
+  topic: string;
+  followUp?: string;
+  reports: MeetingReport[];
+  finalDecision: FinalDecision;
+}
 
 interface MeetingRoomProps {
   topic: string;
   roles: MeetingRoleInput[];
-  reports: MeetingReport[];
-  finalDecision: FinalDecision;
+  rounds: MeetingRound[];
   onBack: () => void;
   onFollowUp: (message: string) => void | Promise<void>;
 }
@@ -32,32 +40,11 @@ interface ModeratorMessage {
 export function MeetingRoom({
   topic,
   roles,
-  reports,
-  finalDecision,
+  rounds,
   onBack,
   onFollowUp,
 }: MeetingRoomProps) {
-  const [visibleCount, setVisibleCount] = useState(0);
-  const [moderatorMessages, setModeratorMessages] = useState<ModeratorMessage[]>(
-    []
-  );
   const [showMiniBar, setShowMiniBar] = useState(false);
-
-  const totalCount = reports.length + 1;
-
-  useEffect(() => {
-    setVisibleCount(0);
-  }, [topic, reports, finalDecision]);
-
-  useEffect(() => {
-    if (visibleCount >= totalCount) return;
-
-    const timer = window.setTimeout(() => {
-      setVisibleCount((current) => current + 1);
-    }, visibleCount === 0 ? 800 : 1200);
-
-    return () => window.clearTimeout(timer);
-  }, [visibleCount, totalCount]);
 
   useEffect(() => {
     function handleScroll() {
@@ -75,25 +62,10 @@ export function MeetingRoom({
     [roles]
   );
 
-  const visibleReports = reports.slice(0, Math.min(visibleCount, reports.length));
-  const showFinalDecision = visibleCount > reports.length;
-  const statusText = getMeetingStatusText(visibleCount, totalCount);
-  const canFollowUp = visibleCount >= totalCount;
-
-  const activeRoleId =
-    visibleCount > 0 && visibleCount <= reports.length
-      ? reports[Math.min(visibleCount - 1, reports.length - 1)]?.roleId
-      : showFinalDecision
-        ? "ceo"
-        : null;
+  const statusText = "会议已完成，可继续追问";
+  const canFollowUp = true;
 
   async function handleModeratorSubmit(message: string) {
-    const note = {
-      id: `moderator-note-${Date.now()}`,
-      message,
-    };
-
-    setModeratorMessages((current) => [...current, note]);
     await onFollowUp(message);
   }
 
@@ -102,10 +74,10 @@ export function MeetingRoom({
       <MeetingMiniBar
         visible={showMiniBar}
         statusText={statusText}
-        visibleCount={visibleCount}
-        totalCount={totalCount}
+        visibleCount={rounds.length}
+        totalCount={rounds.length}
         participantRoleIds={participantRoleIds}
-        activeRoleId={activeRoleId}
+        activeRoleId={"ceo"}
       />
 
       <MeetingHeader
@@ -115,35 +87,44 @@ export function MeetingRoom({
         statusText={statusText}
       />
 
-      <section className="mt-8 flex flex-col gap-6">
-        {visibleReports.map((report) => (
-          <ReportCard
-            key={report.id}
-            roleId={report.roleId}
-            speaker={report.speaker}
-            title=""
-            badge="Role Report"
-            summary={report.summary}
-            content={report.content}
-            reasoning={report.reasoning}
-          />
-        ))}
+      <section className="mt-8 flex flex-col gap-10">
+        {rounds.map((round, index) => (
+          <div key={round.id} className="space-y-6">
+            {index > 0 && (
+              <RoundDivider
+                title="Round"
+                subtitle={`Round ${index + 1} of ${rounds.length}`}
+              />
+            )}
 
-        {showFinalDecision ? (
-          <ReportCard
-            roleId="ceo"
-            speaker={finalDecision.speaker}
-            title="综合裁决与折中方案"
-            badge="Decision"
-            summary={finalDecision.summary}
-            content={finalDecision.content}
-            reasoning={finalDecision.reasoning}
-            isFinal
-          />
-        ) : null}
+            {round.followUp && (
+              <ModeratorNoteCard message={round.followUp} />
+            )}
 
-        {moderatorMessages.map((note) => (
-          <ModeratorNoteCard key={note.id} message={note.message} />
+            {round.reports.map((report) => (
+              <ReportCard
+                key={report.id}
+                roleId={report.roleId}
+                speaker={report.speaker}
+                title=""
+                badge="Role Report"
+                summary={report.summary}
+                content={report.content}
+                reasoning={report.reasoning}
+              />
+            ))}
+
+            <ReportCard
+              roleId="ceo"
+              speaker={round.finalDecision.speaker}
+              title="综合裁决与折中方案"
+              badge="Decision"
+              summary={round.finalDecision.summary}
+              content={round.finalDecision.content}
+              reasoning={round.finalDecision.reasoning}
+              isFinal
+            />
+          </div>
         ))}
       </section>
 
