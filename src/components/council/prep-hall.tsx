@@ -8,7 +8,11 @@ import {
 } from "@dnd-kit/core";
 import { useMemo, useState } from "react";
 import { ROLE_LIBRARY } from "@/data/roles";
-import { createInitialSlots, getAssignedRoleIds, getRoleById } from "@/lib/council";
+import {
+  createInitialSlots,
+  getAssignedRoleIds,
+  getRoleById,
+} from "@/lib/council";
 import type { MeetingSlot } from "@/types/council";
 import { DraggableRoleCard } from "./draggable-role-card";
 import { MeetingGrid } from "./meeting-grid";
