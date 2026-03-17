@@ -135,9 +135,10 @@ export function PrepHall({
               selectedCount={selectedCount}
               canStart={canStart}
               onStart={handleStart}
+              model={model}
+              onModelChange={setModel}
+              isStarting={isStarting}
             />
-
-            <ModelSelector value={model} onChange={setModel} />
           </div>
 
           <RolePool roles={ROLE_LIBRARY} assignedRoleIds={assignedRoleIds} />
