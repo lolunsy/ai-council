@@ -28,5 +28,6 @@ export interface MeetingApiResponse {
 export interface StartMeetingPayload {
   topic: string;
   roles: MeetingRoleInput[];
+  model: string;
   followUp?: string;
 }

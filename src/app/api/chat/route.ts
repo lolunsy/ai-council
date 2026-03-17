@@ -9,6 +9,7 @@ interface RoleInput {
 interface ChatRequest {
   topic: string;
   roles: RoleInput[];
+  model: string;
   followUp?: string;
 }
 
@@ -16,7 +17,7 @@ export async function POST(req: Request) {
   try {
     const body: ChatRequest = await req.json();
 
-    const { topic, roles, followUp } = body;
+    const { topic, roles, model, followUp } = body;
 
     if (!topic || !roles || roles.length === 0) {
       return NextResponse.json(

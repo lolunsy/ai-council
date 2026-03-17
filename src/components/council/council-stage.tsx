@@ -34,6 +34,7 @@ export function CouncilStage() {
   async function handleStartMeeting(input: {
     topic: string;
     roles: MeetingRoleInput[];
+    model: string;
   }) {
     try {
       setErrorMessage("");
@@ -42,6 +43,7 @@ export function CouncilStage() {
       const result = await startMeetingRequest({
         topic: input.topic,
         roles: input.roles,
+        model: input.model,
       });
 
       setSessionData({
