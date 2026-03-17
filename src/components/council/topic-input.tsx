@@ -22,11 +22,11 @@ export function TopicInput({
   isStarting = false,
 }: TopicInputProps) {
   return (
-    <div className="space-y-4">
-      <ModelSelector value={model} onChange={onModelChange} />
+    <div className="rounded-[28px] border border-white/10 bg-white/[0.04] p-3 shadow-[0_20px_80px_rgba(0,0,0,0.35)] backdrop-blur-2xl">
+      <div className="rounded-[22px] border border-white/8 bg-[#0a1628]/85 p-3">
+        <ModelSelector value={model} onChange={onModelChange} />
 
-      <div className="rounded-[28px] border border-white/10 bg-white/[0.04] p-3 shadow-[0_20px_80px_rgba(0,0,0,0.35)] backdrop-blur-2xl">
-        <div className="rounded-[22px] border border-white/8 bg-[#0a1628]/85 p-3">
+        <div className="mt-4 rounded-[20px] border border-white/8 bg-black/10 p-3">
           <textarea
             value={value}
             onChange={(event) => onChange(event.target.value)}
