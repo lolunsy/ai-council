@@ -4,8 +4,6 @@ interface TopicInputProps {
   selectedCount: number;
   canStart: boolean;
   onStart: () => void;
-  isStarting: boolean;
-  errorMessage: string;
 }
 
 export function TopicInput({
@@ -14,8 +12,6 @@ export function TopicInput({
   selectedCount,
   canStart,
   onStart,
-  isStarting,
-  errorMessage,
 }: TopicInputProps) {
   return (
     <div className="rounded-[28px] border border-white/10 bg-white/[0.04] p-3 shadow-[0_20px_80px_rgba(0,0,0,0.35)] backdrop-blur-2xl">
@@ -32,11 +28,6 @@ export function TopicInput({
             <p className="text-xs text-white/45">
               已选择 {selectedCount} 位角色，至少选择 1 位角色并输入议题后才可开始
             </p>
-            {errorMessage && (
-              <p className="text-xs text-amber-400">
-                {errorMessage}
-              </p>
-            )}
             <p className="text-xs text-white/28">
               当前阶段进入静态会议室，用于验收报告流 UI 结构
             </p>
@@ -45,16 +36,17 @@ export function TopicInput({
           <button
             type="button"
             onClick={onStart}
-            disabled={!canStart || isStarting}
+            disabled={!canStart}
             className="inline-flex h-12 min-w-[118px] items-center justify-center rounded-2xl border border-cyan-300/20 bg-cyan-400/15 px-5 text-sm font-medium text-cyan-100 transition hover:bg-cyan-400/20 disabled:cursor-not-allowed disabled:border-white/10 disabled:bg-white/5 disabled:text-white/35"
           >
-            {isStarting ? "启动中..." : "开始开会"}
+            开始开会
           </button>
         </div>
       </div>
     </div>
   );
 }
+
 
 
 

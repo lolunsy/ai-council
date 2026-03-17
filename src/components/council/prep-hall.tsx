@@ -13,50 +13,37 @@ import {
   getAssignedRoleIds,
   getRoleById,
 } from "@/lib/council";
+import type { MeetingRoleInput } from "@/types/meeting";
 import type { MeetingSlot } from "@/types/council";
 import { DraggableRoleCard } from "./draggable-role-card";
 import { MeetingGrid } from "./meeting-grid";
 import { RolePool } from "./role-pool";
 import { TopicInput } from "./topic-input";
 
-import type { MeetingRoleInput } from "@/types/meeting";
-
 interface PrepHallProps {
   onStartMeeting: (input: {
     topic: string;
     roles: MeetingRoleInput[];
-  }) => void;
-  isStarting: boolean;
-  errorMessage: string;
+  }) => void | Promise<void>;
+  isStarting?: boolean;
+  errorMessage?: string;
 }
 
-export function PrepHall({ onStartMeeting, isStarting, errorMessage }: PrepHallProps) {
+export function PrepHall({
+  onStartMeeting,
+  isStarting = false,
+  errorMessage = "",
+}: PrepHallProps) {
   const [slots, setSlots] = useState<MeetingSlot[]>(createInitialSlots);
   const [topic, setTopic] = useState("");
   const [activeRoleId, setActiveRoleId] = useState<string | null>(null);
 
   const assignedRoleIds = useMemo(() => getAssignedRoleIds(slots), [slots]);
   const selectedCount = assignedRoleIds.size;
-  const canStart = selectedCount > 0 && topic.trim().length > 0;
-  const activeRole = getRoleById(ROLE_LIBRARY, activeRoleId);
+  const canStart =
+    !isStarting && selectedCount > 0 && topic.trim().length > 0;
 
-  function handleStartMeeting() {
-    if (!canStart) return;
-    
-    const selectedRoles = Array.from(assignedRoleIds).map((roleId) => {
-      const role = getRoleById(ROLE_LIBRARY, roleId);
-      return {
-        id: role.id,
-        name: role.name,
-        prompt: role.prompt,
-      };
-    });
-    
-    onStartMeeting({
-      topic: topic.trim(),
-      roles: selectedRoles,
-    });
-  }
+  const activeRole = getRoleById(ROLE_LIBRARY, activeRoleId);
 
   function handleDragStart(event: DragStartEvent) {
     const roleId = event.active.data.current?.roleId as string | undefined;
@@ -87,6 +74,22 @@ export function PrepHall({ onStartMeeting, isStarting, errorMessage }: PrepHallP
     );
   }
 
+  function handleStart() {
+    const selectedRoles = slots
+      .map((slot) => getRoleById(ROLE_LIBRARY, slot.roleId))
+      .filter(Boolean)
+      .map((role) => ({
+        id: role!.id,
+        name: role!.name,
+        prompt: `${role!.title}。${role!.description}`,
+      }));
+
+    onStartMeeting({
+      topic: topic.trim(),
+      roles: selectedRoles,
+    });
+  }
+
   return (
     <main className="flex flex-1 flex-col">
       <section className="pt-8 md:pt-12">
@@ -103,6 +106,12 @@ export function PrepHall({ onStartMeeting, isStarting, errorMessage }: PrepHallP
             选择不同立场的 AI 角色加入会议，让它们围绕同一议题展开深度辩论、举证与互相拆台，
             最终由裁判长综合所有意见，输出可执行的折中方案。
           </p>
+
+          {errorMessage ? (
+            <div className="mt-5 rounded-2xl border border-rose-300/18 bg-rose-400/[0.06] px-4 py-3 text-sm text-rose-100/90">
+              会议启动失败：{errorMessage}
+            </div>
+          ) : null}
         </div>
       </section>
 
@@ -120,9 +129,7 @@ export function PrepHall({ onStartMeeting, isStarting, errorMessage }: PrepHallP
               onChange={setTopic}
               selectedCount={selectedCount}
               canStart={canStart}
-              onStart={handleStartMeeting}
-              isStarting={isStarting}
-              errorMessage={errorMessage}
+              onStart={handleStart}
             />
           </div>
 
@@ -136,6 +143,7 @@ export function PrepHall({ onStartMeeting, isStarting, errorMessage }: PrepHallP
     </main>
   );
 }
+
 
 
 
