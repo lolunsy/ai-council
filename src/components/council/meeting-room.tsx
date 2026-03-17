@@ -12,6 +12,7 @@ import {
   getVisibleReports,
 } from "@/lib/mock-meeting-flow";
 import { MeetingHeader } from "./meeting-header";
+import { MeetingMiniBar } from "./meeting-mini-bar";
 import { ModeratorNoteCard } from "./moderator-note-card";
 import { ModeratorPanel } from "./moderator-panel";
 import { ReportCard } from "./report-card";
@@ -27,18 +28,32 @@ interface ModeratorMessage {
 
 export function MeetingRoom({ onBack }: MeetingRoomProps) {
   const [visibleCount, setVisibleCount] = useState(0);
-  const [moderatorMessages, setModeratorMessages] = useState<ModeratorMessage[]>([]);
+  const [moderatorMessages, setModeratorMessages] = useState<ModeratorMessage[]>(
+    []
+  );
   const [moderatorReplies, setModeratorReplies] = useState<ModeratorReply[]>([]);
+  const [showMiniBar, setShowMiniBar] = useState(false);
 
   useEffect(() => {
     if (visibleCount >= MOCK_REPORTS.length) return;
 
     const timer = window.setTimeout(() => {
       setVisibleCount((current) => current + 1);
-    }, visibleCount === 0 ? 450 : 850);
+    }, visibleCount === 0 ? 800 : 1200);
 
     return () => window.clearTimeout(timer);
   }, [visibleCount]);
+
+  useEffect(() => {
+    function handleScroll() {
+      setShowMiniBar(window.scrollY > 220);
+    }
+
+    handleScroll();
+    window.addEventListener("scroll", handleScroll, { passive: true });
+
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
 
   const visibleReports = useMemo(
     () => getVisibleReports(MOCK_REPORTS, visibleCount),
@@ -52,6 +67,11 @@ export function MeetingRoom({ onBack }: MeetingRoomProps) {
 
   const statusText = getMeetingStatusText(visibleCount, MOCK_REPORTS.length);
   const canFollowUp = visibleCount >= MOCK_REPORTS.length;
+
+  const activeRoleId =
+    visibleCount > 0 && visibleCount <= MOCK_REPORTS.length
+      ? MOCK_REPORTS[Math.min(visibleCount - 1, MOCK_REPORTS.length - 1)]?.roleId
+      : null;
 
   function handleModeratorSubmit(message: string) {
     const note = {
@@ -67,6 +87,15 @@ export function MeetingRoom({ onBack }: MeetingRoomProps) {
 
   return (
     <main className="flex flex-1 flex-col">
+      <MeetingMiniBar
+        visible={showMiniBar}
+        statusText={statusText}
+        visibleCount={visibleCount}
+        totalCount={MOCK_REPORTS.length}
+        participantRoleIds={participantRoleIds}
+        activeRoleId={activeRoleId}
+      />
+
       <MeetingHeader
         topic={MOCK_MEETING_TOPIC}
         participantRoleIds={participantRoleIds}
@@ -85,7 +114,10 @@ export function MeetingRoom({ onBack }: MeetingRoomProps) {
             summary={report.summary}
             content={report.content}
             reasoning={report.reasoning}
-            isFinal={index === visibleReports.length - 1 && visibleCount >= MOCK_REPORTS.length}
+            isFinal={
+              index === visibleReports.length - 1 &&
+              visibleCount >= MOCK_REPORTS.length
+            }
           />
         ))}
 
@@ -116,5 +148,6 @@ export function MeetingRoom({ onBack }: MeetingRoomProps) {
     </main>
   );
 }
+
 
 
