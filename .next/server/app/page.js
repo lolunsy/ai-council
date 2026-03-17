@@ -8,32 +8,32 @@
           }
         `),()=>{s.current?.removeAttribute("data-motion-pop-id"),v.contains(y)&&v.removeChild(y)}},[t]),(0,b.jsx)(M,{isPresent:t,childRef:s,sizeRef:a,pop:o,children:!1===o?e:x.cloneElement(e,{ref:c})})}let j=({children:e,initial:t,isPresent:n,onExitComplete:r,custom:i,presenceAffectsLayout:o,mode:l,anchorX:s,anchorY:a,root:u})=>{let c=S(R),d=(0,x.useId)(),h=!0,p=(0,x.useMemo)(()=>(h=!1,{id:d,initial:t,isPresent:n,custom:i,onExitComplete:e=>{for(let t of(c.set(e,!0),c.values()))if(!t)return;r&&r()},register:e=>(c.set(e,!1),()=>c.delete(e))}),[n,c,r]);return o&&h&&(p={...p}),(0,x.useMemo)(()=>{c.forEach((e,t)=>c.set(t,!1))},[n]),x.useEffect(()=>{n||c.size||!r||r()},[n]),e=(0,b.jsx)(L,{pop:"popLayout"===l,isPresent:n,anchorX:s,anchorY:a,root:u,children:e}),(0,b.jsx)(T.Provider,{value:p,children:e})};function R(){return new Map}function N(e=!0){let t=(0,x.useContext)(T);if(null===t)return[!0,null];let{isPresent:n,onExitComplete:r,register:i}=t,o=(0,x.useId)(),l=(0,x.useCallback)(()=>e&&r&&r(o),[o,r,e]);return!n&&r?[!1,l]:[!0]}let I=e=>e.key||"";function O(e){let t=[];return x.Children.forEach(e,e=>{(0,x.isValidElement)(e)&&t.push(e)}),t}let V=({children:e,custom:t,initial:n=!0,onExitComplete:r,presenceAffectsLayout:i=!0,mode:o="sync",propagate:l=!1,anchorX:s="left",anchorY:a="top",root:u})=>{let[c,d]=N(l),h=(0,x.useMemo)(()=>O(e),[e]),p=l&&!c?[]:h.map(I),f=(0,x.useRef)(!0),m=(0,x.useRef)(h),g=S(()=>new Map),y=(0,x.useRef)(new Set),[v,w]=(0,x.useState)(h),[T,C]=(0,x.useState)(h);E(()=>{f.current=!1,m.current=h;for(let e=0;e<T.length;e++){let t=I(T[e]);p.includes(t)?(g.delete(t),y.current.delete(t)):!0!==g.get(t)&&g.set(t,!1)}},[T,p.length,p.join("-")]);let D=[];if(h!==v){let e=[...h];for(let t=0;t<T.length;t++){let n=T[t],r=I(n);p.includes(r)||(e.splice(t,0,n),D.push(n))}return"wait"===o&&D.length&&(e=D),C(O(e)),w(h),null}let{forceRender:P}=(0,x.useContext)(k);return(0,b.jsx)(b.Fragment,{children:T.map(e=>{let v=I(e),x=(!l||!!c)&&(h===T||p.includes(v));return(0,b.jsx)(j,{isPresent:x,initial:(!f.current||!!n)&&void 0,custom:t,presenceAffectsLayout:i,mode:o,root:u,onExitComplete:x?void 0:()=>{if(y.current.has(v)||!g.has(v))return;y.current.add(v),g.set(v,!0);let e=!0;g.forEach(t=>{t||(e=!1)}),e&&(P?.(),C(m.current),l&&d?.(),r&&r())},anchorX:s,anchorY:a,children:e},v)})})},F=[{id:"report-cfo",roleId:"cfo",speaker:"CFO",title:"极度抠门的财务总监",badge:"Finance",summary:"在没有明确销售拉动模型、品牌外溢可量化路径和风险对冲预案之前，不建议直接批准 1000 万预算。",content:` 
  ## 核心判断 
- 
+
  从财务视角看，这笔预算不是不能花，而是**现在这样花太粗糙**。 
- 
+
  ### 我最关心的三个问题 
  - 联名究竟带来销售转化，还是只带来一次性声量 
  - 是否能沉淀为长期品牌资产 
  - 失败后是否存在止损机制 
- 
+
  ### 财务建议 
  1. 先拆成两阶段预算 
  2. 第一阶段用较小金额验证市场反应 
  3. 达到阈值后再释放第二阶段资金 
- 
+
  | 项目 | 当前方案 | 建议方案 | 
  | --- | --- | --- | 
  | 总预算 | 1000 万 | 分阶段拨付 | 
  | 风险 | 高 | 中 | 
  | 可控性 | 弱 | 强 | 
- 
+
  > 结论：我不反对联名，但反对一步到位地豪赌。 
  `,reasoning:` 
  ### 推演过程 
  - 假设联名带来短期曝光，但未带来实际转化，则 ROI 极低 
  - 假设对方品牌调性与我们不完全匹配，可能造成品牌认知稀释 
  - 假设项目执行链路过长，还会出现供应链、法务、营销协同成本上升 
- 
+
  ### 我要求补充的数据 
  - 联名目标用户的匹配度 
  - 单次曝光对应转化率预测 
@@ -41,19 +41,19 @@
  - 项目失败后的预算回收路径 
  `},{id:"report-pm",roleId:"pm",speaker:"PM",title:"激进增长型产品经理",badge:"Product",summary:"如果这次联名能帮我们突破现有用户圈层并抢占注意力窗口，1000 万未必贵，关键是要定义爆点和传播链路。",content:` 
  ## 核心判断 
- 
+
  从增长和产品心智看，这次联名有机会成为一次**战略级事件**，而不只是营销动作。 
- 
+
  ### 我支持的原因 
  - 市场注意力极度稀缺，爆点本身就是资产 
  - 如果联名对象选得准，可以直接打进新圈层 
  - 联名不仅卖货，也能重塑品牌叙事 
- 
+
  ### 执行建议 
  1. 联名必须有明确的产品化表达 
  2. 不能只停留在视觉包装层 
  3. 要设计用户自传播机制 
- 
+
  ### 成功标准 
  - 社交平台讨论度明显破圈 
  - 新客占比显著提升 
@@ -63,72 +63,72 @@
  - 如果我们只做常规投放，很难形成事件级传播 
  - 反而联名更容易制造用户愿意主动讨论的话题 
  - 一次成功联名可以同时服务增长、品牌和内容传播 
- 
+
  ### 风险提醒 
- - 如果联名只是“贴 logo”，用户会觉得敷衍 
+ - 如果联名只是"贴 logo"，用户会觉得敷衍 
  - 如果没有后续承接，热度会快速流失 
  - 如果产品体验跟不上，声量越大反噬越大 
  `},{id:"report-legal",roleId:"legal",speaker:"Legal",title:"极度严谨的法务负责人",badge:"Legal",summary:"这类联名项目最大的隐患不在预算本身，而在知识产权、授权边界、物料使用范围和舆情责任划分。",content:` 
  ## 核心判断 
- 
+
  我的立场很明确：项目可以推进，但前提是**法务必须提前进入主流程，而不是事后兜底**。 
- 
+
  ### 高风险点 
  - 商标、版权、联名素材使用范围 
  - 线上线下物料的授权边界 
  - 舆情事件中的责任归属 
  - 合同中的排他性与违约责任 
- 
+
  ### 法务要求 
  1. 所有素材必须明确授权清单 
  2. 合同必须约定传播场景和期限 
  3. 对突发舆情要有联合响应条款 
  4. 必须约定终止合作后的素材下架机制 
- 
+
  > 结论：可以做，但要把风险写进合同，而不是写进希望里。 
  `,reasoning:` 
  ### 推演过程 
  - 联名最常见的问题不是项目不火，而是火了之后边界不清 
  - 一旦合作方在舆论层面出现问题，我们会被动卷入 
  - 若授权范围模糊，后续所有素材都可能成为风险源 
- 
+
  ### 必须前置的动作 
  - IP 归属审查 
  - 对方品牌历史舆情筛查 
  - 合同模板前置审阅 
  - 联名素材审批机制建立 
- `},{id:"report-chief",roleId:"ceo",speaker:"裁判长",title:"综合裁决与折中方案",badge:"Decision",summary:"建议采用“小步试错 + 分阶段放量 + 法务前置 + 产品化表达”的折中策略，而不是直接拍板全量投入。",content:` 
+ `},{id:"report-chief",roleId:"ceo",speaker:"裁判长",title:"综合裁决与折中方案",badge:"Decision",summary:'建议采用"小步试错 + 分阶段放量 + 法务前置 + 产品化表达"的折中策略，而不是直接拍板全量投入。',content:` 
  ## 最终裁决 
- 
- 我不支持简单地回答“做”或“不做”，更合理的方式是把这个问题改写成： 
- 
+
+ 我不支持简单地回答"做"或"不做"，更合理的方式是把这个问题改写成： 
+
  **我们是否要用一个分阶段、可回收、可量化的方式，去赌一次高潜力联名？** 
- 
+
  ### 最终方案 
  1. 先批第一阶段探索预算 
  2. 用验证目标替代笼统目标 
  3. 法务与品牌同步前置 
  4. 如果验证数据成立，再进入第二阶段放量 
- 
+
  ### 为什么这样定 
  - 兼顾增长机会与财务纪律 
  - 兼顾品牌势能与合规底线 
- - 让组织承担的是“可控风险”，不是“模糊兴奋” 
- 
+ - 让组织承担的是"可控风险"，不是"模糊兴奋" 
+
  | 维度 | 最终策略 | 
  | --- | --- | 
  | 预算 | 分阶段 | 
  | 风险控制 | 前置 | 
  | 品牌表达 | 强化产品化 | 
  | 决策原则 | 数据驱动放量 | 
- 
+
  > 结论：不是不做，而是不能用冲动的方式做。 
  `,reasoning:` 
  ### 形成结论的依据 
  - CFO 对预算风险的担忧成立 
  - PM 对增长窗口和注意力红利的判断也成立 
  - Legal 对边界、授权与责任问题的提醒必须纳入主流程 
- 
+
  ### 裁决逻辑 
  真正成熟的决策，不是只听最保守的人，也不是只听最激进的人， 
  而是把机会、风险和执行条件压到同一张桌子上。 
