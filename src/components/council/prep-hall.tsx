@@ -12,15 +12,17 @@ import { createInitialSlots, getAssignedRoleIds, getRoleById } from "@/lib/counc
 import type { MeetingSlot } from "@/types/council";
 import { DraggableRoleCard } from "./draggable-role-card";
 import { MeetingGrid } from "./meeting-grid";
-import { MeetingRoom } from "./meeting-room";
 import { RolePool } from "./role-pool";
 import { TopicInput } from "./topic-input";
 
-export function PrepHall() {
+interface PrepHallProps {
+  onStartMeeting: () => void;
+}
+
+export function PrepHall({ onStartMeeting }: PrepHallProps) {
   const [slots, setSlots] = useState<MeetingSlot[]>(createInitialSlots);
   const [topic, setTopic] = useState("");
   const [activeRoleId, setActiveRoleId] = useState<string | null>(null);
-  const [isInMeeting, setIsInMeeting] = useState(false);
 
   const assignedRoleIds = useMemo(() => getAssignedRoleIds(slots), [slots]);
   const selectedCount = assignedRoleIds.size;
@@ -56,18 +58,6 @@ export function PrepHall() {
     );
   }
 
-  function handleStartMeeting() {
-    setIsInMeeting(true);
-  }
-
-  function handleBackToPrepHall() {
-    setIsInMeeting(false);
-  }
-
-  if (isInMeeting) {
-    return <MeetingRoom onBack={handleBackToPrepHall} />;
-  }
-
   return (
     <main className="flex flex-1 flex-col">
       <section className="pt-8 md:pt-12">
@@ -101,7 +91,7 @@ export function PrepHall() {
               onChange={setTopic}
               selectedCount={selectedCount}
               canStart={canStart}
-              onStart={handleStartMeeting}
+              onStart={onStartMeeting}
             />
           </div>
 
@@ -115,5 +105,6 @@ export function PrepHall() {
     </main>
   );
 }
+
 
 
