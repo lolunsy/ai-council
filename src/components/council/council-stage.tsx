@@ -2,6 +2,7 @@
 
 import { AnimatePresence } from "framer-motion";
 import { useState } from "react";
+import { DEFAULT_MEETING_MODEL } from "@/data/models";
 import { startMeetingRequest } from "@/lib/api";
 import type {
   FinalDecision,
@@ -22,6 +23,7 @@ interface MeetingRound {
 interface MeetingSessionData {
   topic: string;
   roles: MeetingRoleInput[];
+  model: string;
   rounds: MeetingRound[];
 }
 
@@ -43,12 +45,13 @@ export function CouncilStage() {
       const result = await startMeetingRequest({
         topic: input.topic,
         roles: input.roles,
-        model: input.model,
+        model: input.model || DEFAULT_MEETING_MODEL,
       });
 
       setSessionData({
         topic: input.topic,
         roles: input.roles,
+        model: input.model || DEFAULT_MEETING_MODEL,
         rounds: [
           {
             id: `round-${Date.now()}`,
@@ -76,6 +79,7 @@ export function CouncilStage() {
       topic: sessionData.topic,
       roles: sessionData.roles,
       followUp: message,
+      model: sessionData.model || DEFAULT_MEETING_MODEL,
     });
 
     setSessionData((current) => {
