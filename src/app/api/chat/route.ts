@@ -25,8 +25,7 @@ export async function POST(req: Request) {
       );
     }
 
-    // === 模拟多角色生成 ===
-    const reports = roles.map((role, index) => {
+    const reports = roles.map((role) => {
       return {
         id: `report-${role.id}`,
         roleId: role.id,
@@ -67,7 +66,6 @@ export async function POST(req: Request) {
       };
     });
 
-    // === 模拟裁判长总结 ===
     const finalDecision = {
       speaker: "裁判长",
       summary: "综合各方观点后的最终决策（模拟）",
