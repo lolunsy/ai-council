@@ -1,7 +1,14 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import type { FinalDecision, MeetingReport, MeetingRoleInput } from "@/types/meeting";
+import { useEffect, useMemo, useState } from "react";
+import type {
+  FinalDecision,
+  MeetingReport,
+  MeetingRoleInput,
+} from "@/types/meeting";
+import {
+  getMeetingStatusText,
+} from "@/lib/mock-meeting-flow";
 import { MeetingHeader } from "./meeting-header";
 import { MeetingMiniBar } from "./meeting-mini-bar";
 import { ModeratorNoteCard } from "./moderator-note-card";
@@ -14,7 +21,7 @@ interface MeetingRoomProps {
   reports: MeetingReport[];
   finalDecision: FinalDecision;
   onBack: () => void;
-  onFollowUp: (message: string) => void;
+  onFollowUp: (message: string) => void | Promise<void>;
 }
 
 interface ModeratorMessage {
@@ -31,18 +38,26 @@ export function MeetingRoom({
   onFollowUp,
 }: MeetingRoomProps) {
   const [visibleCount, setVisibleCount] = useState(0);
-  const [moderatorMessages, setModeratorMessages] = useState<ModeratorMessage[]>([]);
+  const [moderatorMessages, setModeratorMessages] = useState<ModeratorMessage[]>(
+    []
+  );
   const [showMiniBar, setShowMiniBar] = useState(false);
 
+  const totalCount = reports.length + 1;
+
   useEffect(() => {
-    if (visibleCount >= reports.length) return;
+    setVisibleCount(0);
+  }, [topic, reports, finalDecision]);
+
+  useEffect(() => {
+    if (visibleCount >= totalCount) return;
 
     const timer = window.setTimeout(() => {
       setVisibleCount((current) => current + 1);
     }, visibleCount === 0 ? 800 : 1200);
 
     return () => window.clearTimeout(timer);
-  }, [visibleCount, reports.length]);
+  }, [visibleCount, totalCount]);
 
   useEffect(() => {
     function handleScroll() {
@@ -55,26 +70,31 @@ export function MeetingRoom({
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  const visibleReports = reports.slice(0, visibleCount);
-  const participantRoleIds = roles.map((role) => role.id);
-  const statusText = visibleCount < reports.length
-    ? `正在听取第 ${visibleCount} 位角色发言`
-    : "裁判长已完成总结，可继续追问";
-  const canFollowUp = visibleCount >= reports.length;
+  const participantRoleIds = useMemo(
+    () => roles.map((role) => role.id),
+    [roles]
+  );
+
+  const visibleReports = reports.slice(0, Math.min(visibleCount, reports.length));
+  const showFinalDecision = visibleCount > reports.length;
+  const statusText = getMeetingStatusText(visibleCount, totalCount);
+  const canFollowUp = visibleCount >= totalCount;
 
   const activeRoleId =
     visibleCount > 0 && visibleCount <= reports.length
       ? reports[Math.min(visibleCount - 1, reports.length - 1)]?.roleId
-      : null;
+      : showFinalDecision
+        ? "ceo"
+        : null;
 
-  function handleModeratorSubmit(message: string) {
+  async function handleModeratorSubmit(message: string) {
     const note = {
       id: `moderator-note-${Date.now()}`,
       message,
     };
 
     setModeratorMessages((current) => [...current, note]);
-    onFollowUp(message);
+    await onFollowUp(message);
   }
 
   return (
@@ -83,7 +103,7 @@ export function MeetingRoom({
         visible={showMiniBar}
         statusText={statusText}
         visibleCount={visibleCount}
-        totalCount={reports.length}
+        totalCount={totalCount}
         participantRoleIds={participantRoleIds}
         activeRoleId={activeRoleId}
       />
@@ -96,41 +116,34 @@ export function MeetingRoom({
       />
 
       <section className="mt-8 flex flex-col gap-6">
-        {visibleReports.map((report, index) => (
+        {visibleReports.map((report) => (
           <ReportCard
             key={report.id}
             roleId={report.roleId}
             speaker={report.speaker}
-            title={report.speaker}
-            badge="Report"
+            title=""
+            badge="Role Report"
             summary={report.summary}
             content={report.content}
             reasoning={report.reasoning}
-            isFinal={
-              index === visibleReports.length - 1 &&
-              visibleCount >= reports.length
-            }
           />
         ))}
 
-        {visibleCount >= reports.length && (
+        {showFinalDecision ? (
           <ReportCard
-            key="final-decision"
-            roleId="final"
+            roleId="ceo"
             speaker={finalDecision.speaker}
-            title={finalDecision.speaker}
-            badge="Final"
+            title="综合裁决与折中方案"
+            badge="Decision"
             summary={finalDecision.summary}
             content={finalDecision.content}
             reasoning={finalDecision.reasoning}
             isFinal
           />
-        )}
+        ) : null}
 
         {moderatorMessages.map((note) => (
-          <div key={note.id} className="space-y-6">
-            <ModeratorNoteCard message={note.message} />
-          </div>
+          <ModeratorNoteCard key={note.id} message={note.message} />
         ))}
       </section>
 
