@@ -13,10 +13,159 @@ interface ChatRequest {
   model?: string;
 }
 
+interface OpenRouterMessage {
+  role: "system" | "user" | "assistant";
+  content: string;
+}
+
+async function callOpenRouter(options: {
+  model: string;
+  messages: OpenRouterMessage[];
+  temperature?: number;
+}) {
+  const apiKey = process.env.OPENROUTER_API_KEY;
+
+  if (!apiKey) {
+    throw new Error("Missing OPENROUTER_API_KEY");
+  }
+
+  const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${apiKey}`,
+      "HTTP-Referer": process.env.OPENROUTER_SITE_URL || "https://ai-council-03sb.onrender.com",
+      "X-OpenRouter-Title": process.env.OPENROUTER_APP_NAME || "AI Council",
+    },
+    body: JSON.stringify({
+      model: options.model,
+      messages: options.messages,
+      temperature: options.temperature ?? 0.7,
+    }),
+  });
+
+  if (!response.ok) {
+    const text = await response.text();
+    throw new Error(`OpenRouter error ${response.status}: ${text}`);
+  }
+
+  const data = await response.json();
+  return data?.choices?.[0]?.message?.content || "";
+}
+
+function buildRoleSystemPrompt(role: RoleInput) {
+  return `
+你正在参加一个企业决策会议。
+
+你的角色名称：${role.name}
+你的角色设定：${role.prompt}
+
+请始终站在该角色立场发言，不要中立，不要模糊。
+输出必须使用中文 Markdown。
+请严格按以下结构输出：
+
+## 核心判断
+先给出结论。
+
+## 建议
+给出结构化建议，使用列表。
+
+## 风险与补充说明
+说明你最担心的点。
+
+## 推演过程
+写出你形成判断的分析路径，便于后续折叠展示。
+`.trim();
+}
+
+function buildRoleUserPrompt(topic: string, followUp?: string) {
+  return `
+当前议题：
+${topic}
+
+${followUp ? `主持人补充信息：\n${followUp}\n` : ""}
+
+请围绕当前议题给出完整判断。
+`.trim();
+}
+
+function splitReportContent(raw: string) {
+  const reasoningMarker = "## 推演过程";
+  const markerIndex = raw.indexOf(reasoningMarker);
+
+  if (markerIndex === -1) {
+    return {
+      summary: raw.slice(0, 120).trim() || "暂无摘要",
+      content: raw,
+      reasoning: "## 推演过程\n暂无单独推演内容。",
+    };
+  }
+
+  const content = raw.slice(0, markerIndex).trim();
+  const reasoning = raw.slice(markerIndex).trim();
+
+  const summarySource = content
+    .replace(/[#>*`-]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+
+  return {
+    summary: summarySource.slice(0, 100) || "暂无摘要",
+    content,
+    reasoning,
+  };
+}
+
+function buildJudgeSystemPrompt() {
+  return `
+你是这场会议的裁判长。
+你需要阅读所有角色观点，做出折中、清晰、可执行的最终裁决。
+
+输出必须使用中文 Markdown。
+请严格按以下结构输出：
+
+## 最终裁决
+先给出拍板结论。
+
+## 最终方案
+用列表给出执行方案。
+
+## 为什么这样定
+解释裁决逻辑。
+
+## 推演过程
+简要说明你如何平衡各方意见。
+`.trim();
+}
+
+function buildJudgeUserPrompt(topic: string, reports: Array<{
+  speaker: string;
+  content: string;
+}>, followUp?: string) {
+  return `
+当前议题：
+${topic}
+
+${followUp ? `主持人补充信息：\n${followUp}\n` : ""}
+
+以下是各角色发言：
+
+${reports
+  .map(
+    (report, index) => `
+### 角色 ${index + 1}：${report.speaker}
+${report.content}
+`
+  )
+  .join("\n")}
+
+请综合所有观点给出最终裁决。
+`.trim();
+}
+
 export async function POST(req: Request) {
   try {
     const body: ChatRequest = await req.json();
-
     const { topic, roles, followUp, model } = body;
 
     if (!topic || !roles || roles.length === 0) {
@@ -28,75 +177,65 @@ export async function POST(req: Request) {
 
     const activeModel = model || "openrouter/auto";
 
-    const reports = roles.map((role) => {
-      return {
-        id: `report-${role.id}`,
+    const reports = [];
+
+    for (const role of roles) {
+      const raw = await callOpenRouter({
+        model: activeModel,
+        messages: [
+          {
+            role: "system",
+            content: buildRoleSystemPrompt(role),
+          },
+          {
+            role: "user",
+            content: buildRoleUserPrompt(topic, followUp),
+          },
+        ],
+        temperature: 0.7,
+      });
+
+      const parsed = splitReportContent(raw);
+
+      reports.push({
+        id: `report-${role.id}-${Date.now()}`,
         roleId: role.id,
         speaker: role.name,
-        summary: `这是 ${role.name} 对议题的核心判断（模拟数据）`,
-        content: ` 
- ## 核心判断 
+        summary: parsed.summary,
+        content: parsed.content,
+        reasoning: parsed.reasoning,
+      });
+    }
 
- 我是 ${role.name}。 
-
- 针对议题： 
-
- > ${topic} 
-
- ${followUp ? `同时考虑主持人补充信息：${followUp}` : ""} 
-
- ## 当前模型 
- - ${activeModel} 
-
- 我给出的判断是：当前需要综合评估风险与机会。 
-
- ## 建议 
-
- 1. 不要一次性决策 
- 2. 建议分阶段推进 
- 3. 需要更多数据支持 
-         `,
-        reasoning: ` 
- ### 推演逻辑（模拟） 
-
- - 从 ${role.name} 的角色视角出发 
- - 分析议题风险与收益 
- - 当前请求透传模型：${activeModel} 
- - 给出结构化建议 
-
- （当前为假数据，用于打通前后端链路） 
-         `,
-      };
+    const judgeRaw = await callOpenRouter({
+      model: activeModel,
+      messages: [
+        {
+          role: "system",
+          content: buildJudgeSystemPrompt(),
+        },
+        {
+          role: "user",
+          content: buildJudgeUserPrompt(
+            topic,
+            reports.map((report) => ({
+              speaker: report.speaker,
+              content: report.content,
+            })),
+            followUp
+          ),
+        },
+      ],
+      temperature: 0.6,
     });
+
+    const judgeParsed = splitReportContent(judgeRaw);
 
     const finalDecision = {
       speaker: "裁判长",
-      summary: "综合各方观点后的最终决策（模拟）",
-      content: ` 
- ## 最终裁决 
-
- 基于所有角色的意见，我给出如下判断： 
-
- - 当前议题存在机会，但风险不可忽视 
- - 建议采用分阶段推进策略 
- - 在获取更多数据后再扩大投入 
-
- ## 当前模型 
- - ${activeModel} 
-
- ## 结论 
-
- 不是不做，而是要用更可控的方式做。 
-       `,
-      reasoning: ` 
- ### 裁决依据 
-
- - 各角色观点存在分歧 
- - 需要在增长与风险之间取得平衡 
- - 当前请求透传模型：${activeModel} 
-
- （当前为模拟输出） 
-       `,
+      summary: judgeParsed.summary,
+      content: judgeParsed.content,
+      reasoning: judgeParsed.reasoning,
     };
 
     return NextResponse.json({
@@ -105,7 +244,10 @@ export async function POST(req: Request) {
     });
   } catch (error) {
     return NextResponse.json(
-      { error: "Server error", detail: String(error) },
+      {
+        error: "Server error",
+        detail: error instanceof Error ? error.message : String(error),
+      },
       { status: 500 }
     );
   }
