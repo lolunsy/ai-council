@@ -1,8 +1,7 @@
 "use client";
 
 import { X } from "lucide-react";
-import { useEffect, useState } from "react";
-import { DEFAULT_RUNTIME_SETTINGS } from "@/lib/settings";
+import { useState } from "react";
 import type { MeetingRuntimeSettings } from "@/types/settings";
 
 interface SettingsModalProps {
@@ -18,120 +17,96 @@ export function SettingsModal({
   onClose,
   onSave,
 }: SettingsModalProps) {
-  const [form, setForm] = useState<MeetingRuntimeSettings>(initialSettings);
-
-  useEffect(() => {
-    setForm(initialSettings);
-  }, [initialSettings]);
-
-  if (!open) return null;
-
-  function updateField<K extends keyof MeetingRuntimeSettings>(
-    key: K,
-    value: MeetingRuntimeSettings[K]
-  ) {
-    setForm((current) => ({
-      ...current,
-      [key]: value,
-    }));
-  }
+  const [baseUrl, setBaseUrl] = useState(initialSettings.baseUrl);
+  const [apiKey, setApiKey] = useState(initialSettings.apiKey);
+  const [model, setModel] = useState(initialSettings.model);
 
   function handleSave() {
     onSave({
-      baseUrl: form.baseUrl.trim() || DEFAULT_RUNTIME_SETTINGS.baseUrl,
-      apiKey: form.apiKey.trim(),
-      model: form.model.trim() || DEFAULT_RUNTIME_SETTINGS.model,
+      baseUrl: baseUrl.trim() || initialSettings.baseUrl,
+      apiKey: apiKey.trim(),
+      model: model.trim() || initialSettings.model,
     });
     onClose();
   }
 
-  return (
-    <div className="fixed inset-0 z-[90] flex items-center justify-center bg-[#030712]/70 px-4 backdrop-blur-sm">
-      <div className="w-full max-w-2xl overflow-hidden rounded-[32px] border border-white/10 bg-[#081321]/95 shadow-[0_30px_120px_rgba(0,0,0,0.45)]">
-        <div className="flex items-start justify-between gap-4 border-b border-white/8 px-6 py-5">
-          <div>
-            <p className="text-xs uppercase tracking-[0.18em] text-white/35">
-              Global Settings
-            </p>
-            <h3 className="mt-2 text-2xl font-semibold text-white">
-              会议设置
-            </h3>
-            <p className="mt-2 text-sm leading-6 text-white/55">
-              使用你自己的聚合 API 配置。当前仅保存在本地浏览器，不上传到云端。
-            </p>
-          </div>
+  if (!open) return null;
 
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div
+        className="fixed inset-0 bg-black/60 backdrop-blur-sm"
+        onClick={onClose}
+      />
+
+      <div className="relative z-10 w-full max-w-md rounded-3xl border border-white/10 bg-[#0a1628]/85 p-6 shadow-[0_40px_120px_rgba(0,0,0,0.6)] backdrop-blur-2xl">
+        <div className="mb-6 flex items-center justify-between">
+          <h2 className="text-lg font-semibold text-white">会议设置</h2>
           <button
             type="button"
             onClick={onClose}
-            className="inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-white/10 bg-white/5 text-white/65 transition hover:border-white/18 hover:bg-white/8 hover:text-white"
+            className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-white/10 bg-white/5 text-white/72 transition hover:border-white/18 hover:bg-white/8 hover:text-white"
+            aria-label="关闭"
           >
             <X className="h-4 w-4" />
           </button>
         </div>
 
-        <div className="space-y-5 px-6 py-6">
+        <div className="space-y-5">
           <div className="space-y-2">
-            <label className="text-sm font-medium text-white/88">
-              API Base URL
+            <label className="block text-sm font-medium text-white/72">
+              API 基础地址
             </label>
             <input
-              value={form.baseUrl}
-              onChange={(event) => updateField("baseUrl", event.target.value)}
+              type="text"
+              value={baseUrl}
+              onChange={(e) => setBaseUrl(e.target.value)}
               placeholder="https://openrouter.ai/api/v1/chat/completions"
-              className="h-12 w-full rounded-2xl border border-white/10 bg-black/20 px-4 text-sm text-white outline-none transition focus:border-cyan-300/25"
+              className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white placeholder:text-white/30 focus:outline-none focus:ring-1 focus:ring-cyan-300"
             />
           </div>
 
           <div className="space-y-2">
-            <label className="text-sm font-medium text-white/88">
-              API Key
+            <label className="block text-sm font-medium text-white/72">
+              API 密钥
             </label>
             <input
-              value={form.apiKey}
-              onChange={(event) => updateField("apiKey", event.target.value)}
               type="password"
-              placeholder="输入你自己的第三方 API Key"
-              className="h-12 w-full rounded-2xl border border-white/10 bg-black/20 px-4 text-sm text-white outline-none transition focus:border-cyan-300/25"
+              value={apiKey}
+              onChange={(e) => setApiKey(e.target.value)}
+              placeholder="sk-..."
+              className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white placeholder:text-white/30 focus:outline-none focus:ring-1 focus:ring-cyan-300"
             />
-          </div>
-
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-white/88">
-              Model
-            </label>
-            <input
-              value={form.model}
-              onChange={(event) => updateField("model", event.target.value)}
-              placeholder="openrouter/auto"
-              className="h-12 w-full rounded-2xl border border-white/10 bg-black/20 px-4 text-sm text-white outline-none transition focus:border-cyan-300/25"
-            />
-          </div>
-
-          <div className="rounded-2xl border border-white/8 bg-black/10 px-4 py-3">
-            <p className="text-xs leading-6 text-white/42">
-              建议将配置为你自己的聚合 API 地址、Key 和模型名。后续这里还能扩展附件策略、温度和高级角色设置。
+            <p className="text-xs text-white/45">
+              留空将使用环境变量中的 API 密钥（服务端）
             </p>
           </div>
-        </div>
 
-        <div className="flex items-center justify-between gap-4 border-t border-white/8 px-6 py-5">
-          <p className="text-xs text-white/32">
-            当前配置仅保存在本地浏览器，不进入公开项目的服务器环境变量。
-          </p>
+          <div className="space-y-2">
+            <label className="block text-sm font-medium text-white/72">
+              模型名称
+            </label>
+            <input
+              type="text"
+              value={model}
+              onChange={(e) => setModel(e.target.value)}
+              placeholder="openrouter/auto"
+              className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white placeholder:text-white/30 focus:outline-none focus:ring-1 focus:ring-cyan-300"
+            />
+          </div>
 
-          <div className="flex items-center gap-3">
+          <div className="mt-8 flex gap-3">
             <button
               type="button"
               onClick={onClose}
-              className="inline-flex h-11 items-center justify-center rounded-2xl border border-white/10 bg-white/5 px-4 text-sm text-white/72 transition hover:border-white/18 hover:bg-white/8 hover:text-white"
+              className="flex-1 rounded-2xl border border-white/10 bg-white/5 px-5 py-3 text-sm font-medium text-white/72 transition hover:border-white/18 hover:bg-white/8 hover:text-white"
             >
               取消
             </button>
             <button
               type="button"
               onClick={handleSave}
-              className="inline-flex h-11 items-center justify-center rounded-2xl border border-cyan-300/18 bg-cyan-400/12 px-5 text-sm font-medium text-cyan-100 transition hover:bg-cyan-400/18"
+              className="flex-1 rounded-2xl border border-cyan-300/20 bg-cyan-400/15 px-5 py-3 text-sm font-medium text-cyan-100 transition hover:bg-cyan-400/20"
             >
               保存设置
             </button>
