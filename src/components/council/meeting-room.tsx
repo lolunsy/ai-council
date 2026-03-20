@@ -115,16 +115,24 @@ export function MeetingRoom({
           })),
         });
 
+        if (cancelled) return;
+
         onRoundGenerated({
           ...latestRound,
           reports: generatedReports,
           finalDecision,
         });
 
-        setActiveRoleIndex(-1);
-        setCurrentPhase("会议讨论完成");
+        setCurrentPhase("裁判长已完成总结，可继续追问");
+      } catch (error) {
+        setCurrentPhase(
+          error instanceof Error ? error.message : "会议生成失败"
+        );
       } finally {
-        setIsGenerating(false);
+        if (!cancelled) {
+          setIsGenerating(false);
+          setActiveRoleIndex(-1);
+        }
       }
     }
 
@@ -133,21 +141,25 @@ export function MeetingRoom({
     return () => {
       cancelled = true;
     };
-  }, [latestRound, roles, settings, onRoundGenerated]);
+  }, [latestRound, roles, topic, settings, onRoundGenerated, isGenerating]);
 
   const participantRoleIds = useMemo(
     () => roles.map((role) => role.id),
     [roles]
   );
 
+  const completedCount = Math.min(
+    (latestRound?.reports.length || 0) + (latestRound?.finalDecision ? 1 : 0),
+    roles.length + 1
+  );
+  const totalCount = roles.length + 1;
+
   const activeRoleId = 
     activeRoleIndex >= 0 && activeRoleIndex < roles.length
-      ? roles[activeRoleIndex].id
+      ? roles[activeRoleIndex]?.id
       : activeRoleIndex === roles.length
         ? "ceo"
         : null;
-
-  const canFollowUp = latestRound?.finalDecision !== undefined;
 
   async function handleModeratorSubmit(message: string) {
     await onFollowUp(message);
@@ -158,8 +170,8 @@ export function MeetingRoom({
       <MeetingMiniBar
         visible={showMiniBar}
         statusText={currentPhase}
-        visibleCount={activeRoleIndex + 1}
-        totalCount={roles.length + 1}
+        visibleCount={completedCount}
+        totalCount={totalCount}
         participantRoleIds={participantRoleIds}
         activeRoleId={activeRoleId}
       />
@@ -172,57 +184,49 @@ export function MeetingRoom({
       />
 
       <section className="mt-8 flex flex-col gap-6">
-        {rounds.map((round, roundIndex) => {
-          const isLatestRound = round.id === latestRound?.id;
+        {rounds.map((round, roundIndex) => (
+          <div key={round.id} className="space-y-6">
+            <RoundDivider
+              title={`第 ${roundIndex + 1} 轮讨论`}
+              subtitle={round.followUp ? "基于主持人补充信息的新一轮讨论" : "会议初始讨论"}
+            />
 
-          return (
-            <div key={round.id} className="space-y-6">
-              <RoundDivider
-                title={`第 ${roundIndex + 1} 轮讨论`}
-                subtitle={
-                  round.followUp
-                    ? "基于主持人补充信息发起的新一轮讨论"
-                    : "会议初始讨论"
-                }
+            {round.followUp ? (
+              <ModeratorNoteCard message={round.followUp} />
+            ) : null}
+
+            {round.reports.map((report) => (
+              <ReportCard
+                key={report.id}
+                roleId={report.roleId}
+                speaker={report.speaker}
+                title=""
+                badge="Role Report"
+                summary={report.summary}
+                content={report.content}
+                reasoning={report.reasoning}
               />
+            ))}
 
-              {round.followUp ? (
-                <ModeratorNoteCard message={round.followUp} />
-              ) : null}
-
-              {round.reports.map((report) => (
-                <ReportCard
-                  key={report.id}
-                  roleId={report.roleId}
-                  speaker={report.speaker}
-                  title=""
-                  badge="Role Report"
-                  summary={report.summary}
-                  content={report.content}
-                  reasoning={report.reasoning}
-                />
-              ))}
-
-              {round.finalDecision ? (
-                <ReportCard
-                  roleId="ceo"
-                  speaker={round.finalDecision.speaker}
-                  title="综合裁决与折中方案"
-                  badge="Decision"
-                  summary={round.finalDecision.summary}
-                  content={round.finalDecision.content}
-                  reasoning={round.finalDecision.reasoning}
-                  isFinal
-                />
-              ) : null}
-            </div>
-          );
-        })}
+            {round.finalDecision ? (
+              <ReportCard
+                roleId="ceo"
+                speaker={round.finalDecision.speaker}
+                title="综合裁决与折中方案"
+                badge="Decision"
+                summary={round.finalDecision.summary}
+                content={round.finalDecision.content}
+                reasoning={round.finalDecision.reasoning}
+                isFinal
+              />
+            ) : null}
+          </div>
+        ))}
       </section>
 
       <ModeratorPanel
         onSubmit={handleModeratorSubmit}
-        disabled={!canFollowUp}
+        disabled={isGenerating || !latestRound?.finalDecision}
       />
     </main>
   );
