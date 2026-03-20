@@ -1,6 +1,7 @@
 {
   "/_not-found/page": "app/_not-found/page.js",
-  "/api/chat/role/route": "app/api/chat/role/route.js",
+  "/api/chat/judge/route": "app/api/chat/judge/route.js",
+  "/api/chat/route": "app/api/chat/route.js",
   "/page": "app/page.js",
-  "/api/chat/route": "app/api/chat/route.js"
+  "/api/chat/role/route": "app/api/chat/role/route.js"
 }
