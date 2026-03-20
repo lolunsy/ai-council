@@ -168,7 +168,7 @@ export function SettingsModal({
             <input
               value={form.baseUrl}
               onChange={(event) => updateField("baseUrl", event.target.value)}
-              placeholder=" `https://openrouter.ai` "
+              placeholder="例如： `https://cli.lxjjdj.fun` "
               className="h-12 w-full rounded-2xl border border-white/10 bg-black/20 px-4 text-sm text-white outline-none transition focus:border-cyan-300/25"
             />
             <p className="text-xs leading-5 text-white/38">
@@ -196,14 +196,14 @@ export function SettingsModal({
             <input
               value={form.model}
               onChange={(event) => updateField("model", event.target.value)}
-              placeholder="openrouter/auto"
+              placeholder="例如：glm-4-flash / openrouter/auto"
               className="h-12 w-full rounded-2xl border border-white/10 bg-black/20 px-4 text-sm text-white outline-none transition focus:border-cyan-300/25"
             />
           </div>
 
           <div className="rounded-2xl border border-white/8 bg-black/10 px-4 py-3">
             <p className="text-xs leading-6 text-white/42">
-              建议将配置为你自己的聚合 API 完整接口地址、Key 和模型名。后续这里还能扩展附件策略、温度和高级角色设置。
+              推荐流程：先选择接入类型，再填写域名、Key 和模型。系统会按类型自动补全接口路径，并按认证方式拼接请求头。
             </p>
           </div>
         </div>
