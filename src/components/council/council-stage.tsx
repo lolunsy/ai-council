@@ -1,7 +1,7 @@
 "use client";
 
 import { AnimatePresence } from "framer-motion";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { startMeetingRequest } from "@/lib/api";
 import {
   DEFAULT_RUNTIME_SETTINGS,
@@ -39,14 +39,13 @@ export function CouncilStage() {
   const [isStarting, setIsStarting] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [settingsOpen, setSettingsOpen] = useState(false);
-  const [runtimeSettings, setRuntimeSettings] = useState<MeetingRuntimeSettings>(
-    DEFAULT_RUNTIME_SETTINGS
-  );
+  const [runtimeSettings, setRuntimeSettings] = useState<MeetingRuntimeSettings>(() => {
+    if (typeof window === "undefined") {
+      return DEFAULT_RUNTIME_SETTINGS;
+    }
+    return readRuntimeSettings();
+  });
   const [sessionData, setSessionData] = useState<MeetingSessionData | null>(null);
-
-  useEffect(() => {
-    setRuntimeSettings(readRuntimeSettings());
-  }, []);
 
   async function handleStartMeeting(input: {
     topic: string;
