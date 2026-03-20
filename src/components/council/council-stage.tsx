@@ -14,6 +14,7 @@ import type {
   MeetingRoleInput,
 } from "@/types/meeting";
 import type { MeetingRuntimeSettings } from "@/types/settings";
+import { MeetingLoading } from "./meeting-loading";
 import { MeetingRoom } from "./meeting-room";
 import { PrepHall } from "./prep-hall";
 import { SettingsButton } from "./settings-button";
@@ -37,6 +38,7 @@ interface MeetingSessionData {
 export function CouncilStage() {
   const [isDiscussing, setIsDiscussing] = useState(false);
   const [isStarting, setIsStarting] = useState(false);
+  const [currentTopic, setCurrentTopic] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [runtimeSettings, setRuntimeSettings] = useState<MeetingRuntimeSettings>(() => {
@@ -53,6 +55,7 @@ export function CouncilStage() {
   }) {
     try {
       setErrorMessage("");
+      setCurrentTopic(input.topic);
       setIsStarting(true);
 
       const result = await startMeetingRequest({
@@ -126,7 +129,9 @@ export function CouncilStage() {
       </div>
 
       <AnimatePresence mode="wait">
-        {isDiscussing && sessionData ? (
+        {isStarting ? (
+          <MeetingLoading key="loading" topic={currentTopic} />
+        ) : isDiscussing && sessionData ? (
           <MeetingRoom
             key="meeting-room"
             topic={sessionData.topic}
