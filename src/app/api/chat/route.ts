@@ -1,41 +1,17 @@
 import { NextResponse } from "next/server";
 
-function normalizeChatCompletionsUrl(rawUrl?: string) {
-  const fallback = " `https://openrouter.ai/api/v1/chat/completions` ";
-  const input = (rawUrl || "").trim();
-
-  if (!input) return fallback;
-
-  const cleaned = input.replace(/\/+$/, "");
-
-  // 已经是完整接口
-  if (cleaned.endsWith("/chat/completions")) {
-    return cleaned;
-  }
-
-  // OpenRouter 常见错误输入自动修正
-  if (cleaned === " `https://openrouter.ai` ") {
-    return " `https://openrouter.ai/api/v1/chat/completions` ";
-  }
-
-  if (cleaned === " `https://openrouter.ai/api/v1` ") {
-    return " `https://openrouter.ai/api/v1/chat/completions` ";
-  }
-
-  if (cleaned.endsWith("/api/v1") || cleaned.endsWith("/v1")) {
-    return `${cleaned}/chat/completions`;
-  }
-
-  return cleaned;
-}
-
 interface RoleInput {
   id: string;
   name: string;
   prompt: string;
 }
 
+type ProviderType = "openrouter" | "openai_compatible" | "custom_relay";
+type AuthMode = "bearer" | "raw";
+
 interface RuntimeSettings {
+  providerType: ProviderType;
+  authMode: AuthMode;
   baseUrl: string;
   apiKey: string;
   model: string;
@@ -53,25 +29,102 @@ interface OpenRouterMessage {
   content: string;
 }
 
-async function callOpenRouter(options: {
+function normalizeProviderUrl(providerType: ProviderType, rawUrl?: string) {
+  const input = (rawUrl || "").trim();
+  const cleaned = input.replace(/\/+$/, "");
+
+  if (!cleaned) {
+    if (providerType === "openrouter") {
+      return " `https://openrouter.ai/api/v1/chat/completions` ";
+    }
+    return "";
+  }
+
+  if (providerType === "openrouter") {
+    if (
+      cleaned === " `https://openrouter.ai` " ||
+      cleaned === " `https://openrouter.ai/api/v1` " ||
+      cleaned === " `https://openrouter.ai/api/v1/chat/completions` "
+    ) {
+      return " `https://openrouter.ai/api/v1/chat/completions` ";
+    }
+
+    if (cleaned.endsWith("/chat/completions")) {
+      return cleaned;
+    }
+
+    if (cleaned.endsWith("/api/v1") || cleaned.endsWith("/v1")) {
+      return `${cleaned}/chat/completions`;
+    }
+
+    return `${cleaned}/api/v1/chat/completions`;
+  }
+
+  if (providerType === "openai_compatible") {
+    if (cleaned.endsWith("/chat/completions")) {
+      return cleaned;
+    }
+
+    if (cleaned.endsWith("/api/v1") || cleaned.endsWith("/v1")) {
+      return `${cleaned}/chat/completions`;
+    }
+
+    return `${cleaned}/v1/chat/completions`;
+  }
+
+  if (cleaned.endsWith("/chat/completions")) {
+    return cleaned;
+  }
+
+  if (cleaned.endsWith("/api/v1") || cleaned.endsWith("/v1")) {
+    return `${cleaned}/chat/completions`;
+  }
+
+  return `${cleaned}/v1/chat/completions`;
+}
+
+function buildAuthHeaders(authMode: AuthMode, apiKey: string) {
+  if (!apiKey) {
+    throw new Error("缺少 API Key，请先在右上角会议设置中填写。");
+  }
+
+  if (authMode === "raw") {
+    return {
+      Authorization: apiKey,
+    };
+  }
+
+  return {
+    Authorization: `Bearer ${apiKey}`,
+  };
+}
+
+async function callUpstream(options: {
+  providerType: ProviderType;
+  authMode: AuthMode;
   baseUrl: string;
   apiKey: string;
   model: string;
   messages: OpenRouterMessage[];
   temperature?: number;
 }) {
-  if (!options.apiKey) {
-    throw new Error("缺少 API Key，请先在右上角会议设置中填写。");
+  const resolvedUrl = normalizeProviderUrl(
+    options.providerType,
+    options.baseUrl
+  );
+
+  if (!resolvedUrl) {
+    throw new Error("缺少有效的 API 地址，请先在会议设置中填写。");
   }
 
-  const resolvedUrl = normalizeChatCompletionsUrl(options.baseUrl);
+  const authHeaders = buildAuthHeaders(options.authMode, options.apiKey);
 
   const response = await fetch(resolvedUrl, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      Authorization: `Bearer ${options.apiKey}`,
-      "HTTP-Referer": "https://ai-council-03sb.onrender.com",
+      ...authHeaders,
+      "HTTP-Referer": " `https://ai-council-03sb.onrender.com` ",
       "X-OpenRouter-Title": "AI Council",
     },
     body: JSON.stringify({
@@ -81,14 +134,24 @@ async function callOpenRouter(options: {
     }),
   });
 
+  const rawText = await response.text();
+
   if (!response.ok) {
-    const text = await response.text();
     throw new Error(
-      `上游模型请求失败 ${response.status} | URL: ${resolvedUrl} | ${text}`
+      `上游模型请求失败 ${response.status} | URL: ${resolvedUrl} | ${rawText.slice(0, 300)}`
     );
   }
 
-  const data = await response.json();
+  let data: any;
+
+  try {
+    data = JSON.parse(rawText);
+  } catch {
+    throw new Error(
+      `上游返回了非 JSON 内容 | URL: ${resolvedUrl} | ${rawText.slice(0, 300)}`
+    );
+  }
+
   return data?.choices?.[0]?.message?.content || "";
 }
 
@@ -218,17 +281,18 @@ export async function POST(req: Request) {
       );
     }
 
-    const activeBaseUrl =
-      settings?.baseUrl?.trim() ||
-      "https://openrouter.ai/api/v1/chat/completions";
-
+    const activeProviderType = settings?.providerType || "openai_compatible";
+    const activeAuthMode = settings?.authMode || "bearer";
+    const activeBaseUrl = settings?.baseUrl?.trim() || "";
     const activeApiKey = settings?.apiKey?.trim() || "";
     const activeModel = settings?.model?.trim() || "openrouter/auto";
 
     const reports = [];
 
     for (const role of roles) {
-      const raw = await callOpenRouter({
+      const raw = await callUpstream({
+        providerType: activeProviderType,
+        authMode: activeAuthMode,
         baseUrl: activeBaseUrl,
         apiKey: activeApiKey,
         model: activeModel,
@@ -257,7 +321,9 @@ export async function POST(req: Request) {
       });
     }
 
-    const judgeRaw = await callOpenRouter({
+    const judgeRaw = await callUpstream({
+      providerType: activeProviderType,
+      authMode: activeAuthMode,
       baseUrl: activeBaseUrl,
       apiKey: activeApiKey,
       model: activeModel,
