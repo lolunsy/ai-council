@@ -1,5 +1,34 @@
 import { NextResponse } from "next/server";
 
+function normalizeChatCompletionsUrl(rawUrl?: string) {
+  const fallback = " `https://openrouter.ai/api/v1/chat/completions` ";
+  const input = (rawUrl || "").trim();
+
+  if (!input) return fallback;
+
+  const cleaned = input.replace(/\/+$/, "");
+
+  // 已经是完整接口
+  if (cleaned.endsWith("/chat/completions")) {
+    return cleaned;
+  }
+
+  // OpenRouter 常见错误输入自动修正
+  if (cleaned === " `https://openrouter.ai` ") {
+    return " `https://openrouter.ai/api/v1/chat/completions` ";
+  }
+
+  if (cleaned === " `https://openrouter.ai/api/v1` ") {
+    return " `https://openrouter.ai/api/v1/chat/completions` ";
+  }
+
+  if (cleaned.endsWith("/api/v1") || cleaned.endsWith("/v1")) {
+    return `${cleaned}/chat/completions`;
+  }
+
+  return cleaned;
+}
+
 interface RoleInput {
   id: string;
   name: string;
