@@ -3,13 +3,29 @@
 import { X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { DEFAULT_RUNTIME_SETTINGS } from "@/lib/settings";
-import type { MeetingRuntimeSettings } from "@/types/settings";
+import type {
+  AuthMode,
+  MeetingRuntimeSettings,
+  ProviderType,
+} from "@/types/settings";
 
 interface SettingsModalProps {
   open: boolean;
   initialSettings: MeetingRuntimeSettings;
   onClose: () => void;
   onSave: (settings: MeetingRuntimeSettings) => void;
+}
+
+function getProviderHint(providerType: ProviderType) {
+  if (providerType === "openrouter") {
+    return "OpenRouter 可只填域名，系统会自动补成 /api/v1/chat/completions";
+  }
+
+  if (providerType === "openai_compatible") {
+    return "OpenAI Compatible 可只填域名，系统会自动补成 /v1/chat/completions";
+  }
+
+  return "Custom Relay 将尽量保留你的原始地址，仅在明显缺失时做轻量补全。";
 }
 
 export function SettingsModal({
@@ -36,8 +52,37 @@ export function SettingsModal({
     }));
   }
 
+  function handleProviderChange(providerType: ProviderType) {
+    setForm((current) => {
+      if (providerType === "openrouter") {
+        return {
+          ...current,
+          providerType,
+          authMode: "bearer",
+          baseUrl: current.baseUrl.trim() || DEFAULT_RUNTIME_SETTINGS.baseUrl,
+          model: current.model.trim() || "openrouter/auto",
+        };
+      }
+
+      if (providerType === "openai_compatible") {
+        return {
+          ...current,
+          providerType,
+          authMode: current.authMode || "bearer",
+        };
+      }
+
+      return {
+        ...current,
+        providerType,
+      };
+    });
+  }
+
   function handleSave() {
     onSave({
+      providerType: form.providerType || DEFAULT_RUNTIME_SETTINGS.providerType,
+      authMode: form.authMode || DEFAULT_RUNTIME_SETTINGS.authMode,
       baseUrl: form.baseUrl.trim() || DEFAULT_RUNTIME_SETTINGS.baseUrl,
       apiKey: form.apiKey.trim(),
       model: form.model.trim() || DEFAULT_RUNTIME_SETTINGS.model,
@@ -71,6 +116,51 @@ export function SettingsModal({
         </div>
 
         <div className="space-y-5 px-6 py-6">
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-white/88">
+                接入类型
+              </label>
+              <select
+                value={form.providerType}
+                onChange={(event) =>
+                  handleProviderChange(event.target.value as ProviderType)
+                }
+                className="h-12 w-full rounded-2xl border border-white/10 bg-black/20 px-4 text-sm text-white outline-none transition focus:border-cyan-300/25"
+              >
+                <option value="openrouter" className="bg-[#0a1628]">
+                  OpenRouter
+                </option>
+                <option value="openai_compatible" className="bg-[#0a1628]">
+                  OpenAI Compatible
+                </option>
+                <option value="custom_relay" className="bg-[#0a1628]">
+                  Custom Relay
+                </option>
+              </select>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-white/88">
+                认证方式
+              </label>
+              <select
+                value={form.authMode}
+                onChange={(event) =>
+                  updateField("authMode", event.target.value as AuthMode)
+                }
+                className="h-12 w-full rounded-2xl border border-white/10 bg-black/20 px-4 text-sm text-white outline-none transition focus:border-cyan-300/25"
+              >
+                <option value="bearer" className="bg-[#0a1628]">
+                  Bearer Token
+                </option>
+                <option value="raw" className="bg-[#0a1628]">
+                  Raw Key
+                </option>
+              </select>
+            </div>
+          </div>
+
           <div className="space-y-2">
             <label className="text-sm font-medium text-white/88">
               API Base URL
@@ -78,12 +168,11 @@ export function SettingsModal({
             <input
               value={form.baseUrl}
               onChange={(event) => updateField("baseUrl", event.target.value)}
-              placeholder="https://openrouter.ai/api/v1/chat/completions"
+              placeholder=" `https://openrouter.ai` "
               className="h-12 w-full rounded-2xl border border-white/10 bg-black/20 px-4 text-sm text-white outline-none transition focus:border-cyan-300/25"
             />
             <p className="text-xs leading-5 text-white/38">
-              这里必须填写完整接口地址，不是官网首页。OpenRouter 示例：
-              https://openrouter.ai/api/v1/chat/completions 
+              {getProviderHint(form.providerType)}
             </p>
           </div>
 
