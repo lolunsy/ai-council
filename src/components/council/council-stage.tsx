@@ -1,16 +1,23 @@
 "use client";
 
 import { AnimatePresence } from "framer-motion";
-import { useState } from "react";
-import { DEFAULT_MEETING_MODEL } from "@/data/models";
+import { useEffect, useState } from "react";
 import { startMeetingRequest } from "@/lib/api";
+import {
+  DEFAULT_RUNTIME_SETTINGS,
+  readRuntimeSettings,
+  saveRuntimeSettings,
+} from "@/lib/settings";
 import type {
   FinalDecision,
   MeetingReport,
   MeetingRoleInput,
 } from "@/types/meeting";
+import type { MeetingRuntimeSettings } from "@/types/settings";
 import { MeetingRoom } from "./meeting-room";
 import { PrepHall } from "./prep-hall";
+import { SettingsButton } from "./settings-button";
+import { SettingsModal } from "./settings-modal";
 
 interface MeetingRound {
   id: string;
@@ -23,7 +30,7 @@ interface MeetingRound {
 interface MeetingSessionData {
   topic: string;
   roles: MeetingRoleInput[];
-  model: string;
+  settings: MeetingRuntimeSettings;
   rounds: MeetingRound[];
 }
 
@@ -31,12 +38,19 @@ export function CouncilStage() {
   const [isDiscussing, setIsDiscussing] = useState(false);
   const [isStarting, setIsStarting] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [runtimeSettings, setRuntimeSettings] = useState<MeetingRuntimeSettings>(
+    DEFAULT_RUNTIME_SETTINGS
+  );
   const [sessionData, setSessionData] = useState<MeetingSessionData | null>(null);
+
+  useEffect(() => {
+    setRuntimeSettings(readRuntimeSettings());
+  }, []);
 
   async function handleStartMeeting(input: {
     topic: string;
     roles: MeetingRoleInput[];
-    model: string;
   }) {
     try {
       setErrorMessage("");
@@ -45,13 +59,13 @@ export function CouncilStage() {
       const result = await startMeetingRequest({
         topic: input.topic,
         roles: input.roles,
-        model: input.model || DEFAULT_MEETING_MODEL,
+        settings: runtimeSettings,
       });
 
       setSessionData({
         topic: input.topic,
         roles: input.roles,
-        model: input.model || DEFAULT_MEETING_MODEL,
+        settings: runtimeSettings,
         rounds: [
           {
             id: `round-${Date.now()}`,
@@ -79,7 +93,7 @@ export function CouncilStage() {
       topic: sessionData.topic,
       roles: sessionData.roles,
       followUp: message,
-      model: sessionData.model || DEFAULT_MEETING_MODEL,
+      settings: sessionData.settings,
     });
 
     setSessionData((current) => {
@@ -101,26 +115,44 @@ export function CouncilStage() {
     });
   }
 
+  function handleSaveSettings(settings: MeetingRuntimeSettings) {
+    setRuntimeSettings(settings);
+    saveRuntimeSettings(settings);
+  }
+
   return (
-    <AnimatePresence mode="wait">
-      {isDiscussing && sessionData ? (
-        <MeetingRoom
-          key="meeting-room"
-          topic={sessionData.topic}
-          roles={sessionData.roles}
-          rounds={sessionData.rounds}
-          onBack={() => setIsDiscussing(false)}
-          onFollowUp={handleFollowUp}
-        />
-      ) : (
-        <PrepHall
-          key="prep-hall"
-          onStartMeeting={handleStartMeeting}
-          isStarting={isStarting}
-          errorMessage={errorMessage}
-        />
-      )}
-    </AnimatePresence>
+    <>
+      <div className="mb-4 flex justify-end">
+        <SettingsButton onClick={() => setSettingsOpen(true)} />
+      </div>
+
+      <AnimatePresence mode="wait">
+        {isDiscussing && sessionData ? (
+          <MeetingRoom
+            key="meeting-room"
+            topic={sessionData.topic}
+            roles={sessionData.roles}
+            rounds={sessionData.rounds}
+            onBack={() => setIsDiscussing(false)}
+            onFollowUp={handleFollowUp}
+          />
+        ) : (
+          <PrepHall
+            key="prep-hall"
+            onStartMeeting={handleStartMeeting}
+            isStarting={isStarting}
+            errorMessage={errorMessage}
+          />
+        )}
+      </AnimatePresence>
+
+      <SettingsModal
+        open={settingsOpen}
+        initialSettings={runtimeSettings}
+        onClose={() => setSettingsOpen(false)}
+        onSave={handleSaveSettings}
+      />
+    </>
   );
 }
 

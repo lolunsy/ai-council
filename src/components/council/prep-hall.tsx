@@ -7,7 +7,6 @@ import {
   type DragStartEvent,
 } from "@dnd-kit/core";
 import { useMemo, useState } from "react";
-import { DEFAULT_MEETING_MODEL } from "@/data/models";
 import { ROLE_LIBRARY } from "@/data/roles";
 import {
   createInitialSlots,
@@ -25,7 +24,6 @@ interface PrepHallProps {
   onStartMeeting: (input: {
     topic: string;
     roles: MeetingRoleInput[];
-    model: string;
   }) => void | Promise<void>;
   isStarting?: boolean;
   errorMessage?: string;
@@ -89,7 +87,6 @@ export function PrepHall({
     onStartMeeting({
       topic: topic.trim(),
       roles: selectedRoles,
-      model: DEFAULT_MEETING_MODEL,
     });
   }
 
