@@ -61,15 +61,14 @@ export function MeetingRoom({
   }, []);
 
   useEffect(() => {
-    const needsGeneration = 
-      latestRound && 
-      latestRound.reports.length === 0 && 
-      !latestRound.finalDecision && 
-      !isGenerating;
-
-    if (!needsGeneration) return;
+    if (!latestRound) return;
+    if (latestRound.reports.length > 0 || latestRound.finalDecision || isGenerating) {
+      return;
+    }
 
     let cancelled = false;
+    const roundId = latestRound.id;
+    const roundFollowUp = latestRound.followUp;
 
     async function runRound() {
       try {
@@ -87,14 +86,18 @@ export function MeetingRoom({
           const report = await generateRoleReport({
             topic,
             role,
-            followUp: latestRound.followUp,
+            followUp: roundFollowUp,
             settings,
           });
+
+          if (cancelled) return;
 
           generatedReports.push(report);
 
           onRoundGenerated({
-            ...latestRound,
+            id: roundId,
+            topic,
+            followUp: roundFollowUp,
             reports: [...generatedReports],
             finalDecision: null,
           });
@@ -107,7 +110,7 @@ export function MeetingRoom({
 
         const finalDecision = await generateJudgeDecision({
           topic,
-          followUp: latestRound.followUp,
+          followUp: roundFollowUp,
           settings,
           reports: generatedReports.map((item) => ({
             speaker: item.speaker,
@@ -118,7 +121,9 @@ export function MeetingRoom({
         if (cancelled) return;
 
         onRoundGenerated({
-          ...latestRound,
+          id: roundId,
+          topic,
+          followUp: roundFollowUp,
           reports: generatedReports,
           finalDecision,
         });
@@ -141,7 +146,7 @@ export function MeetingRoom({
     return () => {
       cancelled = true;
     };
-  }, [latestRound, roles, topic, settings, onRoundGenerated, isGenerating]);
+  }, [latestRound?.id]);
 
   const participantRoleIds = useMemo(
     () => roles.map((role) => role.id),
