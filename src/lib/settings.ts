@@ -1,7 +1,9 @@
 import type { MeetingRuntimeSettings } from "@/types/settings";
 
 export const DEFAULT_RUNTIME_SETTINGS: MeetingRuntimeSettings = {
-  baseUrl: "https://openrouter.ai/api/v1/chat/completions",
+  providerType: "openai_compatible",
+  authMode: "bearer",
+  baseUrl: " `https://openrouter.ai` ",
   apiKey: "",
   model: "openrouter/auto",
 };
@@ -20,6 +22,9 @@ export function readRuntimeSettings(): MeetingRuntimeSettings {
     const parsed = JSON.parse(raw) as Partial<MeetingRuntimeSettings>;
 
     return {
+      providerType:
+        parsed.providerType || DEFAULT_RUNTIME_SETTINGS.providerType,
+      authMode: parsed.authMode || DEFAULT_RUNTIME_SETTINGS.authMode,
       baseUrl: parsed.baseUrl || DEFAULT_RUNTIME_SETTINGS.baseUrl,
       apiKey: parsed.apiKey || "",
       model: parsed.model || DEFAULT_RUNTIME_SETTINGS.model,
