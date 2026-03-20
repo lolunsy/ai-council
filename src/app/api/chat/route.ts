@@ -6,15 +6,17 @@ interface RoleInput {
   prompt: string;
 }
 
+interface RuntimeSettings {
+  baseUrl: string;
+  apiKey: string;
+  model: string;
+}
+
 interface ChatRequest {
   topic: string;
   roles: RoleInput[];
   followUp?: string;
-  settings: {
-    baseUrl: string;
-    apiKey: string;
-    model: string;
-  };
+  settings?: RuntimeSettings;
 }
 
 interface OpenRouterMessage {
@@ -23,30 +25,26 @@ interface OpenRouterMessage {
 }
 
 async function callOpenRouter(options: {
-  settings: {
-    baseUrl: string;
-    apiKey: string;
-    model: string;
-  };
+  baseUrl: string;
+  apiKey: string;
+  model: string;
   messages: OpenRouterMessage[];
   temperature?: number;
 }) {
-  const apiKey = options.settings.apiKey || process.env.OPENROUTER_API_KEY;
-
-  if (!apiKey) {
-    throw new Error("Missing OPENROUTER_API_KEY");
+  if (!options.apiKey) {
+    throw new Error("缺少 API Key，请先在右上角会议设置中填写。");
   }
 
-  const response = await fetch(options.settings.baseUrl, {
+  const response = await fetch(options.baseUrl, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      Authorization: `Bearer ${apiKey}`,
-      "HTTP-Referer": process.env.OPENROUTER_SITE_URL || "https://ai-council-03sb.onrender.com",
-      "X-OpenRouter-Title": process.env.OPENROUTER_APP_NAME || "AI Council",
+      Authorization: `Bearer ${options.apiKey}`,
+      "HTTP-Referer": "https://ai-council-03sb.onrender.com",
+      "X-OpenRouter-Title": "AI Council",
     },
     body: JSON.stringify({
-      model: options.settings.model,
+      model: options.model,
       messages: options.messages,
       temperature: options.temperature ?? 0.7,
     }),
@@ -54,7 +52,7 @@ async function callOpenRouter(options: {
 
   if (!response.ok) {
     const text = await response.text();
-    throw new Error(`OpenRouter error ${response.status}: ${text}`);
+    throw new Error(`上游模型请求失败 ${response.status}: ${text}`);
   }
 
   const data = await response.json();
@@ -146,10 +144,14 @@ function buildJudgeSystemPrompt() {
 `.trim();
 }
 
-function buildJudgeUserPrompt(topic: string, reports: Array<{
-  speaker: string;
-  content: string;
-}>, followUp?: string) {
+function buildJudgeUserPrompt(
+  topic: string,
+  reports: Array<{
+    speaker: string;
+    content: string;
+  }>,
+  followUp?: string
+) {
   return `
 当前议题：
 ${topic}
@@ -165,7 +167,7 @@ ${reports
 ${report.content}
 `
   )
-  .join("\n")}
+  .join("\n" )}
 
 请综合所有观点给出最终裁决。
 `.trim();
@@ -183,11 +185,20 @@ export async function POST(req: Request) {
       );
     }
 
+    const activeBaseUrl =
+      settings?.baseUrl?.trim() ||
+      "https://openrouter.ai/api/v1/chat/completions";
+
+    const activeApiKey = settings?.apiKey?.trim() || "";
+    const activeModel = settings?.model?.trim() || "openrouter/auto";
+
     const reports = [];
 
     for (const role of roles) {
       const raw = await callOpenRouter({
-        settings,
+        baseUrl: activeBaseUrl,
+        apiKey: activeApiKey,
+        model: activeModel,
         messages: [
           {
             role: "system",
@@ -214,7 +225,9 @@ export async function POST(req: Request) {
     }
 
     const judgeRaw = await callOpenRouter({
-      settings,
+      baseUrl: activeBaseUrl,
+      apiKey: activeApiKey,
+      model: activeModel,
       messages: [
         {
           role: "system",
