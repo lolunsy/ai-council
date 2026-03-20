@@ -38,7 +38,7 @@ interface MeetingSessionData {
 export function CouncilStage() {
   const [isDiscussing, setIsDiscussing] = useState(false);
   const [isStarting, setIsStarting] = useState(false);
-  const [currentTopic, setCurrentTopic] = useState("");
+  const [loadingTopic, setLoadingTopic] = useState<string>("");
   const [errorMessage, setErrorMessage] = useState("");
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [runtimeSettings, setRuntimeSettings] = useState<MeetingRuntimeSettings>(() => {
@@ -55,8 +55,8 @@ export function CouncilStage() {
   }) {
     try {
       setErrorMessage("");
-      setCurrentTopic(input.topic);
       setIsStarting(true);
+      setLoadingTopic(input.topic);
 
       const result = await startMeetingRequest({
         topic: input.topic,
@@ -130,7 +130,7 @@ export function CouncilStage() {
 
       <AnimatePresence mode="wait">
         {isStarting ? (
-          <MeetingLoading key="loading" topic={currentTopic} />
+          <MeetingLoading key="loading" topic={loadingTopic} />
         ) : isDiscussing && sessionData ? (
           <MeetingRoom
             key="meeting-room"
