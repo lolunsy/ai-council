@@ -2,7 +2,7 @@
 
 import { AnimatePresence } from "framer-motion";
 import { useState } from "react";
-import { startMeetingRequest } from "@/lib/api";
+import { generateRoleReport, generateJudgeDecision } from "@/lib/api";
 import {
   DEFAULT_RUNTIME_SETTINGS,
   readRuntimeSettings,
@@ -58,10 +58,23 @@ export function CouncilStage() {
       setIsStarting(true);
       setLoadingTopic(input.topic);
 
-      const result = await startMeetingRequest({
+      const reports = await Promise.all(
+        input.roles.map((role) =>
+          generateRoleReport({
+            topic: input.topic,
+            role,
+            settings: runtimeSettings,
+          })
+        )
+      );
+
+      const finalDecision = await generateJudgeDecision({
         topic: input.topic,
-        roles: input.roles,
         settings: runtimeSettings,
+        reports: reports.map((report) => ({
+          speaker: report.speaker,
+          content: report.content,
+        })),
       });
 
       setSessionData({
@@ -72,8 +85,8 @@ export function CouncilStage() {
           {
             id: `round-${Date.now()}`,
             topic: input.topic,
-            reports: result.reports,
-            finalDecision: result.finalDecision,
+            reports,
+            finalDecision,
           },
         ],
       });
@@ -91,11 +104,25 @@ export function CouncilStage() {
   async function handleFollowUp(message: string) {
     if (!sessionData) return;
 
-    const result = await startMeetingRequest({
+    const reports = await Promise.all(
+      sessionData.roles.map((role) =>
+        generateRoleReport({
+          topic: sessionData.topic,
+          role,
+          followUp: message,
+          settings: sessionData.settings,
+        })
+      )
+    );
+
+    const finalDecision = await generateJudgeDecision({
       topic: sessionData.topic,
-      roles: sessionData.roles,
       followUp: message,
       settings: sessionData.settings,
+      reports: reports.map((report) => ({
+        speaker: report.speaker,
+        content: report.content,
+      })),
     });
 
     setSessionData((current) => {
@@ -109,8 +136,8 @@ export function CouncilStage() {
             id: `round-${Date.now()}`,
             topic: current.topic,
             followUp: message,
-            reports: result.reports,
-            finalDecision: result.finalDecision,
+            reports,
+            finalDecision,
           },
         ],
       };
@@ -136,8 +163,10 @@ export function CouncilStage() {
             key="meeting-room"
             topic={sessionData.topic}
             roles={sessionData.roles}
+            settings={sessionData.settings}
             rounds={sessionData.rounds}
             onBack={() => setIsDiscussing(false)}
+            onLoading={setIsStarting}
             onFollowUp={handleFollowUp}
           />
         ) : (

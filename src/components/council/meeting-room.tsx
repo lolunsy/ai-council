@@ -6,7 +6,8 @@ import type {
   MeetingReport,
   MeetingRoleInput,
 } from "@/types/meeting";
-import { getMeetingStatusText } from "@/lib/mock-meeting-flow";
+import type { MeetingRuntimeSettings } from "@/types/settings";
+import { generateRoleReport, generateJudgeDecision } from "@/lib/api";
 import { MeetingHeader } from "./meeting-header";
 import { MeetingMiniBar } from "./meeting-mini-bar";
 import { ModeratorNoteCard } from "./moderator-note-card";
@@ -25,16 +26,20 @@ interface MeetingRound {
 interface MeetingRoomProps {
   topic: string;
   roles: MeetingRoleInput[];
+  settings: MeetingRuntimeSettings;
   rounds: MeetingRound[];
   onBack: () => void;
+  onLoading: (loading: boolean) => void;
   onFollowUp: (message: string) => void | Promise<void>;
 }
 
 export function MeetingRoom({
   topic,
   roles,
+  settings,
   rounds,
   onBack,
+  onLoading,
   onFollowUp,
 }: MeetingRoomProps) {
   const [visibleCount, setVisibleCount] = useState(0);
@@ -93,7 +98,33 @@ export function MeetingRoom({
         : null;
 
   async function handleModeratorSubmit(message: string) {
-    await onFollowUp(message);
+    onLoading(true);
+    try {
+      const newReports = await Promise.all(
+        roles.map((role) =>
+          generateRoleReport({
+            topic,
+            role,
+            followUp: message,
+            settings,
+          })
+        )
+      );
+
+      const newFinalDecision = await generateJudgeDecision({
+        topic,
+        followUp: message,
+        settings,
+        reports: newReports.map((report) => ({
+          speaker: report.speaker,
+          content: report.content,
+        })),
+      });
+
+      await onFollowUp(message);
+    } finally {
+      onLoading(false);
+    }
   }
 
   return (
