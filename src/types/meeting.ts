@@ -1,3 +1,5 @@
+import type { MeetingRuntimeSettings } from "@/types/settings";
+
 export interface MeetingRoleInput {
   id: string;
   name: string;
@@ -29,5 +31,5 @@ export interface StartMeetingPayload {
   topic: string;
   roles: MeetingRoleInput[];
   followUp?: string;
-  model: string;
+  settings: MeetingRuntimeSettings;
 }

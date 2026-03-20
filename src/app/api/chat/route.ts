@@ -10,7 +10,11 @@ interface ChatRequest {
   topic: string;
   roles: RoleInput[];
   followUp?: string;
-  model?: string;
+  settings: {
+    baseUrl: string;
+    apiKey: string;
+    model: string;
+  };
 }
 
 interface OpenRouterMessage {
@@ -19,17 +23,21 @@ interface OpenRouterMessage {
 }
 
 async function callOpenRouter(options: {
-  model: string;
+  settings: {
+    baseUrl: string;
+    apiKey: string;
+    model: string;
+  };
   messages: OpenRouterMessage[];
   temperature?: number;
 }) {
-  const apiKey = process.env.OPENROUTER_API_KEY;
+  const apiKey = options.settings.apiKey || process.env.OPENROUTER_API_KEY;
 
   if (!apiKey) {
     throw new Error("Missing OPENROUTER_API_KEY");
   }
 
-  const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+  const response = await fetch(options.settings.baseUrl, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -38,7 +46,7 @@ async function callOpenRouter(options: {
       "X-OpenRouter-Title": process.env.OPENROUTER_APP_NAME || "AI Council",
     },
     body: JSON.stringify({
-      model: options.model,
+      model: options.settings.model,
       messages: options.messages,
       temperature: options.temperature ?? 0.7,
     }),
@@ -166,7 +174,7 @@ ${report.content}
 export async function POST(req: Request) {
   try {
     const body: ChatRequest = await req.json();
-    const { topic, roles, followUp, model } = body;
+    const { topic, roles, followUp, settings } = body;
 
     if (!topic || !roles || roles.length === 0) {
       return NextResponse.json(
@@ -175,13 +183,11 @@ export async function POST(req: Request) {
       );
     }
 
-    const activeModel = model || "openrouter/auto";
-
     const reports = [];
 
     for (const role of roles) {
       const raw = await callOpenRouter({
-        model: activeModel,
+        settings,
         messages: [
           {
             role: "system",
@@ -208,7 +214,7 @@ export async function POST(req: Request) {
     }
 
     const judgeRaw = await callOpenRouter({
-      model: activeModel,
+      settings,
       messages: [
         {
           role: "system",
