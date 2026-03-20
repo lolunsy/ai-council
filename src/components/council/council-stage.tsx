@@ -25,7 +25,7 @@ interface MeetingRound {
   topic: string;
   followUp?: string;
   reports: MeetingReport[];
-  finalDecision: FinalDecision;
+  finalDecision?: FinalDecision | null;
 }
 
 interface MeetingSessionData {
@@ -58,25 +58,6 @@ export function CouncilStage() {
       setIsStarting(true);
       setLoadingTopic(input.topic);
 
-      const reports = await Promise.all(
-        input.roles.map((role) =>
-          generateRoleReport({
-            topic: input.topic,
-            role,
-            settings: runtimeSettings,
-          })
-        )
-      );
-
-      const finalDecision = await generateJudgeDecision({
-        topic: input.topic,
-        settings: runtimeSettings,
-        reports: reports.map((report) => ({
-          speaker: report.speaker,
-          content: report.content,
-        })),
-      });
-
       setSessionData({
         topic: input.topic,
         roles: input.roles,
@@ -85,8 +66,8 @@ export function CouncilStage() {
           {
             id: `round-${Date.now()}`,
             topic: input.topic,
-            reports,
-            finalDecision,
+            reports: [],
+            finalDecision: null,
           },
         ],
       });
@@ -96,34 +77,12 @@ export function CouncilStage() {
       setErrorMessage(
         error instanceof Error ? error.message : "启动会议失败"
       );
-    } finally {
       setIsStarting(false);
     }
   }
 
   async function handleFollowUp(message: string) {
     if (!sessionData) return;
-
-    const reports = await Promise.all(
-      sessionData.roles.map((role) =>
-        generateRoleReport({
-          topic: sessionData.topic,
-          role,
-          followUp: message,
-          settings: sessionData.settings,
-        })
-      )
-    );
-
-    const finalDecision = await generateJudgeDecision({
-      topic: sessionData.topic,
-      followUp: message,
-      settings: sessionData.settings,
-      reports: reports.map((report) => ({
-        speaker: report.speaker,
-        content: report.content,
-      })),
-    });
 
     setSessionData((current) => {
       if (!current) return current;
@@ -136,8 +95,8 @@ export function CouncilStage() {
             id: `round-${Date.now()}`,
             topic: current.topic,
             followUp: message,
-            reports,
-            finalDecision,
+            reports: [],
+            finalDecision: null,
           },
         ],
       };
@@ -166,8 +125,21 @@ export function CouncilStage() {
             settings={sessionData.settings}
             rounds={sessionData.rounds}
             onBack={() => setIsDiscussing(false)}
-            onLoading={setIsStarting}
             onFollowUp={handleFollowUp}
+            onRoundGenerated={(round) => {
+              setSessionData((current) => {
+                if (!current) return current;
+                
+                const updatedRounds = current.rounds.map((r) =>
+                  r.id === round.id ? round : r
+                );
+                
+                return {
+                  ...current,
+                  rounds: updatedRounds,
+                };
+              });
+            }}
           />
         ) : (
           <PrepHall

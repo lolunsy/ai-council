@@ -1,13 +1,13 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { generateJudgeDecision, generateRoleReport } from "@/lib/api";
 import type {
   FinalDecision,
   MeetingReport,
   MeetingRoleInput,
 } from "@/types/meeting";
 import type { MeetingRuntimeSettings } from "@/types/settings";
-import { generateRoleReport, generateJudgeDecision } from "@/lib/api";
 import { MeetingHeader } from "./meeting-header";
 import { MeetingMiniBar } from "./meeting-mini-bar";
 import { ModeratorNoteCard } from "./moderator-note-card";
@@ -20,48 +20,34 @@ interface MeetingRound {
   topic: string;
   followUp?: string;
   reports: MeetingReport[];
-  finalDecision: FinalDecision;
+  finalDecision?: FinalDecision | null;
 }
 
 interface MeetingRoomProps {
   topic: string;
   roles: MeetingRoleInput[];
-  settings: MeetingRuntimeSettings;
   rounds: MeetingRound[];
+  settings: MeetingRuntimeSettings;
   onBack: () => void;
-  onLoading: (loading: boolean) => void;
   onFollowUp: (message: string) => void | Promise<void>;
+  onRoundGenerated: (round: MeetingRound) => void;
 }
 
 export function MeetingRoom({
   topic,
   roles,
-  settings,
   rounds,
+  settings,
   onBack,
-  onLoading,
   onFollowUp,
+  onRoundGenerated,
 }: MeetingRoomProps) {
-  const [visibleCount, setVisibleCount] = useState(0);
   const [showMiniBar, setShowMiniBar] = useState(false);
+  const [activeRoleIndex, setActiveRoleIndex] = useState<number>(-1);
+  const [currentPhase, setCurrentPhase] = useState("会议准备中");
+  const [isGenerating, setIsGenerating] = useState(false);
 
   const latestRound = rounds[rounds.length - 1];
-  const totalCount = latestRound ? latestRound.reports.length + 1 : 0;
-
-  useEffect(() => {
-    setVisibleCount(0);
-  }, [latestRound?.id]);
-
-  useEffect(() => {
-    if (!latestRound) return;
-    if (visibleCount >= totalCount) return;
-
-    const timer = window.setTimeout(() => {
-      setVisibleCount((current) => current + 1);
-    }, visibleCount === 0 ? 800 : 1200);
-
-    return () => window.clearTimeout(timer);
-  }, [visibleCount, totalCount, latestRound]);
 
   useEffect(() => {
     function handleScroll() {
@@ -74,66 +60,106 @@ export function MeetingRoom({
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
+  useEffect(() => {
+    const needsGeneration = 
+      latestRound && 
+      latestRound.reports.length === 0 && 
+      !latestRound.finalDecision && 
+      !isGenerating;
+
+    if (!needsGeneration) return;
+
+    let cancelled = false;
+
+    async function runRound() {
+      try {
+        setIsGenerating(true);
+
+        const generatedReports: MeetingReport[] = [];
+
+        for (let i = 0; i < roles.length; i += 1) {
+          if (cancelled) return;
+
+          const role = roles[i];
+          setActiveRoleIndex(i);
+          setCurrentPhase(`${role.name} 正在形成判断`);
+
+          const report = await generateRoleReport({
+            topic,
+            role,
+            followUp: latestRound.followUp,
+            settings,
+          });
+
+          generatedReports.push(report);
+
+          onRoundGenerated({
+            ...latestRound,
+            reports: [...generatedReports],
+            finalDecision: null,
+          });
+        }
+
+        if (cancelled) return;
+
+        setActiveRoleIndex(roles.length);
+        setCurrentPhase("裁判长正在综合裁决");
+
+        const finalDecision = await generateJudgeDecision({
+          topic,
+          followUp: latestRound.followUp,
+          settings,
+          reports: generatedReports.map((item) => ({
+            speaker: item.speaker,
+            content: item.content,
+          })),
+        });
+
+        onRoundGenerated({
+          ...latestRound,
+          reports: generatedReports,
+          finalDecision,
+        });
+
+        setActiveRoleIndex(-1);
+        setCurrentPhase("会议讨论完成");
+      } finally {
+        setIsGenerating(false);
+      }
+    }
+
+    runRound();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [latestRound, roles, settings, onRoundGenerated]);
+
   const participantRoleIds = useMemo(
     () => roles.map((role) => role.id),
     [roles]
   );
 
-  const latestVisibleReports = latestRound
-    ? latestRound.reports.slice(0, Math.min(visibleCount, latestRound.reports.length))
-    : [];
-
-  const showLatestFinalDecision = latestRound
-    ? visibleCount > latestRound.reports.length
-    : false;
-
-  const statusText = getMeetingStatusText(visibleCount, totalCount || 1);
-  const canFollowUp = latestRound ? visibleCount >= totalCount : false;
-
-  const activeRoleId =
-    latestRound && visibleCount > 0 && visibleCount <= latestRound.reports.length
-      ? latestRound.reports[Math.min(visibleCount - 1, latestRound.reports.length - 1)]?.roleId
-      : showLatestFinalDecision
+  const activeRoleId = 
+    activeRoleIndex >= 0 && activeRoleIndex < roles.length
+      ? roles[activeRoleIndex].id
+      : activeRoleIndex === roles.length
         ? "ceo"
         : null;
 
+  const canFollowUp = latestRound?.finalDecision !== undefined;
+
   async function handleModeratorSubmit(message: string) {
-    onLoading(true);
-    try {
-      const newReports = await Promise.all(
-        roles.map((role) =>
-          generateRoleReport({
-            topic,
-            role,
-            followUp: message,
-            settings,
-          })
-        )
-      );
-
-      const newFinalDecision = await generateJudgeDecision({
-        topic,
-        followUp: message,
-        settings,
-        reports: newReports.map((report) => ({
-          speaker: report.speaker,
-          content: report.content,
-        })),
-      });
-
-      await onFollowUp(message);
-    } finally {
-      onLoading(false);
-    }
+    await onFollowUp(message);
   }
 
   return (
     <main className="flex flex-1 flex-col">
       <MeetingMiniBar
         visible={showMiniBar}
-        statusText={statusText}
-        visibleCount={visibleCount}
-        totalCount={totalCount || 1}
+        statusText={currentPhase}
+        visibleCount={activeRoleIndex + 1}
+        totalCount={roles.length + 1}
         participantRoleIds={participantRoleIds}
         activeRoleId={activeRoleId}
       />
@@ -142,20 +168,12 @@ export function MeetingRoom({
         topic={topic}
         participantRoleIds={participantRoleIds}
         onBack={onBack}
-        statusText={statusText}
+        statusText={currentPhase}
       />
 
       <section className="mt-8 flex flex-col gap-6">
         {rounds.map((round, roundIndex) => {
           const isLatestRound = round.id === latestRound?.id;
-
-          const visibleReports = isLatestRound
-            ? latestVisibleReports
-            : round.reports;
-
-          const showFinalDecision = isLatestRound
-            ? showLatestFinalDecision
-            : true;
 
           return (
             <div key={round.id} className="space-y-6">
@@ -172,7 +190,7 @@ export function MeetingRoom({
                 <ModeratorNoteCard message={round.followUp} />
               ) : null}
 
-              {visibleReports.map((report) => (
+              {round.reports.map((report) => (
                 <ReportCard
                   key={report.id}
                   roleId={report.roleId}
@@ -185,7 +203,7 @@ export function MeetingRoom({
                 />
               ))}
 
-              {showFinalDecision ? (
+              {round.finalDecision ? (
                 <ReportCard
                   roleId="ceo"
                   speaker={round.finalDecision.speaker}
@@ -209,8 +227,3 @@ export function MeetingRoom({
     </main>
   );
 }
-
-
-
-
-
