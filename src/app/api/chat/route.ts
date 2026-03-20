@@ -64,7 +64,9 @@ async function callOpenRouter(options: {
     throw new Error("缺少 API Key，请先在右上角会议设置中填写。");
   }
 
-  const response = await fetch(options.baseUrl, {
+  const resolvedUrl = normalizeChatCompletionsUrl(options.baseUrl);
+
+  const response = await fetch(resolvedUrl, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -81,7 +83,9 @@ async function callOpenRouter(options: {
 
   if (!response.ok) {
     const text = await response.text();
-    throw new Error(`上游模型请求失败 ${response.status}: ${text}`);
+    throw new Error(
+      `上游模型请求失败 ${response.status} | URL: ${resolvedUrl} | ${text}`
+    );
   }
 
   const data = await response.json();
