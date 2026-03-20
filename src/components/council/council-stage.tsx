@@ -2,7 +2,6 @@
 
 import { AnimatePresence } from "framer-motion";
 import { useState } from "react";
-import { generateRoleReport, generateJudgeDecision } from "@/lib/api";
 import {
   DEFAULT_RUNTIME_SETTINGS,
   readRuntimeSettings,
@@ -14,7 +13,6 @@ import type {
   MeetingRoleInput,
 } from "@/types/meeting";
 import type { MeetingRuntimeSettings } from "@/types/settings";
-import { MeetingLoading } from "./meeting-loading";
 import { MeetingRoom } from "./meeting-room";
 import { PrepHall } from "./prep-hall";
 import { SettingsButton } from "./settings-button";
@@ -38,13 +36,10 @@ interface MeetingSessionData {
 export function CouncilStage() {
   const [isDiscussing, setIsDiscussing] = useState(false);
   const [isStarting, setIsStarting] = useState(false);
-  const [loadingTopic, setLoadingTopic] = useState<string>("");
   const [errorMessage, setErrorMessage] = useState("");
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [runtimeSettings, setRuntimeSettings] = useState<MeetingRuntimeSettings>(() => {
-    if (typeof window === "undefined") {
-      return DEFAULT_RUNTIME_SETTINGS;
-    }
+    if (typeof window === "undefined") return DEFAULT_RUNTIME_SETTINGS;
     return readRuntimeSettings();
   });
   const [sessionData, setSessionData] = useState<MeetingSessionData | null>(null);
@@ -56,7 +51,6 @@ export function CouncilStage() {
     try {
       setErrorMessage("");
       setIsStarting(true);
-      setLoadingTopic(input.topic);
 
       setSessionData({
         topic: input.topic,
@@ -74,16 +68,13 @@ export function CouncilStage() {
 
       setIsDiscussing(true);
     } catch (error) {
-      setErrorMessage(
-        error instanceof Error ? error.message : "启动会议失败"
-      );
+      setErrorMessage(error instanceof Error ? error.message : "启动会议失败");
+    } finally {
       setIsStarting(false);
     }
   }
 
   async function handleFollowUp(message: string) {
-    if (!sessionData) return;
-
     setSessionData((current) => {
       if (!current) return current;
 
@@ -103,6 +94,19 @@ export function CouncilStage() {
     });
   }
 
+  function handleRoundGenerated(round: MeetingRound) {
+    setSessionData((current) => {
+      if (!current) return current;
+
+      return {
+        ...current,
+        rounds: current.rounds.map((item) =>
+          item.id === round.id ? round : item
+        ),
+      };
+    });
+  }
+
   function handleSaveSettings(settings: MeetingRuntimeSettings) {
     setRuntimeSettings(settings);
     saveRuntimeSettings(settings);
@@ -115,31 +119,16 @@ export function CouncilStage() {
       </div>
 
       <AnimatePresence mode="wait">
-        {isStarting ? (
-          <MeetingLoading key="loading" topic={loadingTopic} />
-        ) : isDiscussing && sessionData ? (
+        {isDiscussing && sessionData ? (
           <MeetingRoom
             key="meeting-room"
             topic={sessionData.topic}
             roles={sessionData.roles}
-            settings={sessionData.settings}
             rounds={sessionData.rounds}
+            settings={sessionData.settings}
             onBack={() => setIsDiscussing(false)}
             onFollowUp={handleFollowUp}
-            onRoundGenerated={(round) => {
-              setSessionData((current) => {
-                if (!current) return current;
-                
-                const updatedRounds = current.rounds.map((r) =>
-                  r.id === round.id ? round : r
-                );
-                
-                return {
-                  ...current,
-                  rounds: updatedRounds,
-                };
-              });
-            }}
+            onRoundGenerated={handleRoundGenerated}
           />
         ) : (
           <PrepHall
@@ -160,5 +149,3 @@ export function CouncilStage() {
     </>
   );
 }
-
-
