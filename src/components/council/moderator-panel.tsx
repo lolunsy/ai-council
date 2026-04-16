@@ -5,11 +5,13 @@ import { useState } from "react";
 interface ModeratorPanelProps {
   onSubmit: (message: string) => void;
   disabled?: boolean;
+  statusText?: string;
 }
 
 export function ModeratorPanel({
   onSubmit,
   disabled = false,
+  statusText = "",
 }: ModeratorPanelProps) {
   const [value, setValue] = useState("");
 
@@ -21,46 +23,52 @@ export function ModeratorPanel({
   }
 
   return (
-    <section className="mt-8 pb-10">
-      <div className="rounded-[28px] border border-white/10 bg-white/[0.04] p-3 shadow-[0_20px_80px_rgba(0,0,0,0.25)] backdrop-blur-2xl">
-        <div className="rounded-[22px] border border-white/8 bg-[#0a1628]/85 p-4">
-          <div className="mb-3">
-            <p className="text-xs uppercase tracking-[0.18em] text-white/40">
-              主持人追问区
+    <section className="relative rounded-[30px] border border-white/10 bg-black/72 shadow-[0_30px_120px_rgba(0,0,0,0.38)] backdrop-blur-2xl">
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-cyan-300/65 to-transparent" />
+
+      <div className="relative z-10 rounded-[30px] border border-white/6 bg-[linear-gradient(180deg,rgba(255,255,255,0.04),rgba(255,255,255,0.01))] p-4 md:p-5">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+          <div>
+            <p className="text-[11px] uppercase tracking-[0.28em] text-cyan-100/60">
+              Commander Terminal
             </p>
-            <h3 className="mt-2 text-lg font-semibold text-white">
-              追加信息、提出质疑、点名追问
+            <h3 className="mt-2 text-xl font-semibold tracking-[0.08em] text-white">
+              最高指挥官终端
             </h3>
-            <p className="mt-2 text-sm leading-6 text-white/55">
-              你可以在会议中途补充条件，例如预算变化、目标人群变化，
-              或要求某位角色基于新信息重新评估。
+            <p className="mt-2 max-w-2xl text-sm leading-6 text-white/55">
+              在当前回合结束后，你可以强制追加新的条件、限制或命令，推动全体意识体进入下一轮推演。
             </p>
           </div>
 
-          <div className="rounded-[20px] border border-dashed border-white/10 bg-black/10 p-4">
-            <textarea
-              value={value}
-              onChange={(event) => setValue(event.target.value)}
-              placeholder="例如：补充一个前提，对方品牌最近刚经历舆情危机，请法务和品牌重新评估。"
-              className="min-h-[100px] w-full resize-none bg-transparent text-sm leading-7 text-white/75 placeholder:text-white/25 focus:outline-none"
-            />
-            <div className="mt-3 flex items-center justify-between gap-4 border-t border-white/8 pt-3">
-              <p className="text-xs text-white/30">
-                当前为前端假流程：发送后会插入主持人补充卡与一张裁判长回应卡
-              </p>
-              <button
-                type="button"
-                onClick={handleSend}
-                disabled={disabled || value.trim().length === 0}
-                className="inline-flex h-11 items-center justify-center rounded-2xl border border-cyan-300/18 bg-cyan-400/12 px-4 text-sm font-medium text-cyan-100 transition hover:bg-cyan-400/18 disabled:cursor-not-allowed disabled:border-white/10 disabled:bg-white/5 disabled:text-white/30"
-              >
-                发送追问
-              </button>
-            </div>
+          <div className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs text-white/50">
+            {statusText || "等待指令"}
+          </div>
+        </div>
+
+        <div className="mt-5 rounded-[24px] border border-white/8 bg-black/35 p-4">
+          <textarea
+            value={value}
+            onChange={(event) => setValue(event.target.value)}
+            placeholder="作为最高指挥官，输入追加条件强制介入会议..."
+            className="min-h-[108px] w-full resize-none bg-transparent text-sm leading-7 text-white/80 placeholder:text-white/28 focus:outline-none"
+          />
+
+          <div className="mt-4 flex flex-col gap-3 border-t border-white/8 pt-4 md:flex-row md:items-center md:justify-between">
+            <p className="text-xs leading-6 text-white/35">
+              发送后将创建一轮新的会议推演，并把这条指令插入历史时间轴。
+            </p>
+
+            <button
+              type="button"
+              onClick={handleSend}
+              disabled={disabled || value.trim().length === 0}
+              className="inline-flex h-12 items-center justify-center rounded-2xl border border-cyan-300/25 bg-cyan-400/14 px-5 text-sm font-semibold tracking-[0.12em] text-cyan-50 shadow-[0_0_32px_rgba(34,211,238,0.12)] transition hover:border-cyan-200/45 hover:bg-cyan-300/18 disabled:cursor-not-allowed disabled:border-white/10 disabled:bg-white/5 disabled:text-white/30 disabled:shadow-none"
+            >
+              [ OVERRIDE // 强制介入 ]
+            </button>
           </div>
         </div>
       </div>
     </section>
   );
 }
-

@@ -1,12 +1,13 @@
 "use client";
 
 import { AnimatePresence } from "framer-motion";
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import {
   DEFAULT_RUNTIME_SETTINGS,
   readRuntimeSettings,
   saveRuntimeSettings,
 } from "@/lib/settings";
+import type { CouncilRole } from "@/types/council";
 import type {
   FinalDecision,
   MeetingReport,
@@ -29,6 +30,7 @@ interface MeetingRound {
 interface MeetingSessionData {
   topic: string;
   roles: MeetingRoleInput[];
+  roleProfiles: CouncilRole[];
   settings: MeetingRuntimeSettings;
   rounds: MeetingRound[];
 }
@@ -44,37 +46,42 @@ export function CouncilStage() {
   });
   const [sessionData, setSessionData] = useState<MeetingSessionData | null>(null);
 
-  async function handleStartMeeting(input: {
-    topic: string;
-    roles: MeetingRoleInput[];
-  }) {
-    try {
-      setErrorMessage("");
-      setIsStarting(true);
+  const handleStartMeeting = useCallback(
+    async (input: {
+      topic: string;
+      roles: MeetingRoleInput[];
+      roleProfiles: CouncilRole[];
+    }) => {
+      try {
+        setErrorMessage("");
+        setIsStarting(true);
 
-      setSessionData({
-        topic: input.topic,
-        roles: input.roles,
-        settings: runtimeSettings,
-        rounds: [
-          {
-            id: `round-${Date.now()}`,
-            topic: input.topic,
-            reports: [],
-            finalDecision: null,
-          },
-        ],
-      });
+        setSessionData({
+          topic: input.topic,
+          roles: input.roles,
+          roleProfiles: input.roleProfiles,
+          settings: runtimeSettings,
+          rounds: [
+            {
+              id: `round-${Date.now()}`,
+              topic: input.topic,
+              reports: [],
+              finalDecision: null,
+            },
+          ],
+        });
 
-      setIsDiscussing(true);
-    } catch (error) {
-      setErrorMessage(error instanceof Error ? error.message : "启动会议失败");
-    } finally {
-      setIsStarting(false);
-    }
-  }
+        setIsDiscussing(true);
+      } catch (error) {
+        setErrorMessage(error instanceof Error ? error.message : "启动会议失败");
+      } finally {
+        setIsStarting(false);
+      }
+    },
+    [runtimeSettings]
+  );
 
-  async function handleFollowUp(message: string) {
+  const handleFollowUp = useCallback(async (message: string) => {
     setSessionData((current) => {
       if (!current) return current;
 
@@ -92,9 +99,9 @@ export function CouncilStage() {
         ],
       };
     });
-  }
+  }, []);
 
-  function handleRoundGenerated(round: MeetingRound) {
+  const handleRoundGenerated = useCallback((round: MeetingRound) => {
     setSessionData((current) => {
       if (!current) return current;
 
@@ -105,18 +112,20 @@ export function CouncilStage() {
         ),
       };
     });
-  }
+  }, []);
 
-  function handleSaveSettings(settings: MeetingRuntimeSettings) {
+  const handleSaveSettings = useCallback((settings: MeetingRuntimeSettings) => {
     setRuntimeSettings(settings);
     saveRuntimeSettings(settings);
-  }
+  }, []);
 
   return (
     <>
-      <div className="mb-4 flex justify-end">
-        <SettingsButton onClick={() => setSettingsOpen(true)} />
-      </div>
+      {!isDiscussing ? (
+        <div className="mb-4 flex justify-end">
+          <SettingsButton onClick={() => setSettingsOpen(true)} />
+        </div>
+      ) : null}
 
       <AnimatePresence mode="wait">
         {isDiscussing && sessionData ? (
@@ -124,6 +133,7 @@ export function CouncilStage() {
             key="meeting-room"
             topic={sessionData.topic}
             roles={sessionData.roles}
+            roleProfiles={sessionData.roleProfiles}
             rounds={sessionData.rounds}
             settings={sessionData.settings}
             onBack={() => setIsDiscussing(false)}

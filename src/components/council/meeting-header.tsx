@@ -1,15 +1,16 @@
+import type { CouncilRole } from "@/types/council";
 import { ParticipantStrip } from "./participant-strip";
 
 interface MeetingHeaderProps {
   topic: string;
-  participantRoleIds: string[];
+  participants: CouncilRole[];
   onBack: () => void;
   statusText: string;
 }
 
 export function MeetingHeader({
   topic,
-  participantRoleIds,
+  participants,
   onBack,
   statusText,
 }: MeetingHeaderProps) {
@@ -60,9 +61,8 @@ export function MeetingHeader({
           </div>
         </div>
 
-        <ParticipantStrip roleIds={participantRoleIds} />
+        <ParticipantStrip roles={participants} />
       </div>
     </section>
   );
 }
-

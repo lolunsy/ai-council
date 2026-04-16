@@ -1,130 +1,109 @@
 "use client";
 
-import { ChevronDown } from "lucide-react";
+import { ChevronRight, Crown, Radio, ShieldAlert } from "lucide-react";
 import { motion } from "framer-motion";
-import { useState } from "react";
-import ReactMarkdown from "react-markdown";
-import remarkGfm from "remark-gfm";
-import { ROLE_LIBRARY } from "@/data/roles";
+import type { CouncilRole } from "@/types/council";
 import { cn } from "@/lib/utils";
+
+type ReportCardKind = "report" | "decision" | "note";
 
 interface ReportCardProps {
   speaker: string;
-  title: string;
-  badge: string;
   summary: string;
-  content: string;
-  reasoning: string;
-  roleId: string;
-  isFinal?: boolean;
+  badge: string;
+  role: CouncilRole;
+  kind?: ReportCardKind;
+  isActive?: boolean;
+  isLive?: boolean;
+  onSelect: () => void;
+}
+
+function renderKindIcon(kind: ReportCardKind) {
+  if (kind === "decision") return <Crown className="h-3.5 w-3.5" />;
+  if (kind === "note") return <ShieldAlert className="h-3.5 w-3.5" />;
+  return <Radio className="h-3.5 w-3.5" />;
 }
 
 export function ReportCard({
   speaker,
-  title,
-  badge,
   summary,
-  content,
-  reasoning,
-  roleId,
-  isFinal = false,
+  badge,
+  role,
+  kind = "report",
+  isActive = false,
+  isLive = false,
+  onSelect,
 }: ReportCardProps) {
-  const [expanded, setExpanded] = useState(false);
-  const role = ROLE_LIBRARY.find((item) => item.id === roleId);
+  const toneClass =
+    kind === "decision"
+      ? "border-cyan-300/18 bg-cyan-400/[0.08]"
+      : kind === "note"
+        ? "border-amber-300/18 bg-amber-400/[0.07]"
+        : "border-white/10 bg-white/[0.04]";
 
   return (
-    <motion.article
-      initial={{ opacity: 0, y: 18 }}
+    <motion.button
+      type="button"
+      onClick={onSelect}
+      initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.35 }}
+      whileHover={{ y: -2 }}
+      transition={{ duration: 0.2 }}
       className={cn(
-        "relative overflow-hidden rounded-[32px] border p-6 shadow-[0_20px_80px_rgba(0,0,0,0.22)] backdrop-blur-2xl",
-        isFinal
-          ? "border-cyan-300/20 bg-cyan-400/[0.05]"
-          : "border-white/10 bg-white/[0.045]"
+        "group relative w-full overflow-hidden rounded-[26px] border p-4 text-left shadow-[0_12px_40px_rgba(0,0,0,0.18)] backdrop-blur-xl transition-all duration-300",
+        toneClass,
+        isActive &&
+          "ring-1 ring-cyan-300/55 shadow-[0_0_0_1px_rgba(103,232,249,0.18)_inset,0_0_32px_rgba(34,211,238,0.16)]"
       )}
     >
       <div
         className={cn(
-          "pointer-events-none absolute inset-0 bg-gradient-to-br opacity-70",
-          role?.color ?? "from-white/10 to-white/0"
+          "pointer-events-none absolute inset-0 bg-gradient-to-br opacity-75",
+          role.color
         )}
       />
-      <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-white/20" />
 
       <div className="relative z-10">
-        <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-          <div className="flex min-w-0 items-start gap-4">
-            <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl border border-white/10 bg-black/25 text-2xl shadow-[0_10px_30px_rgba(0,0,0,0.22)]">
-              {role?.avatar ?? "🧠"}
-            </div>
+        <div className="flex items-start gap-3">
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-white/10 bg-black/25 text-xl shadow-[0_10px_24px_rgba(0,0,0,0.2)]">
+            {role.avatar}
+          </div>
 
-            <div className="min-w-0">
-              <div className="flex flex-wrap items-center gap-2">
-                <h2 className="text-lg font-semibold text-white">{speaker}</h2>
-                <span className="rounded-full border border-white/10 bg-white/10 px-2.5 py-1 text-[10px] uppercase tracking-[0.18em] text-white/70">
+          <div className="min-w-0 flex-1">
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <p className="truncate text-sm font-semibold text-white">
+                  {speaker}
+                </p>
+                <div className="mt-1 inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/10 px-2 py-0.5 text-[10px] uppercase tracking-[0.18em] text-white/70">
+                  {renderKindIcon(kind)}
                   {badge}
-                </span>
-                {isFinal ? (
-                  <span className="rounded-full border border-cyan-300/20 bg-cyan-400/12 px-2.5 py-1 text-[10px] uppercase tracking-[0.18em] text-cyan-100/85">
-                    Final Decision
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2">
+                {isLive ? (
+                  <span className="inline-flex items-center rounded-full border border-cyan-300/18 bg-cyan-400/12 px-2 py-0.5 text-[10px] uppercase tracking-[0.16em] text-cyan-100/80">
+                    LIVE
                   </span>
                 ) : null}
-              </div>
-
-              <p className="mt-2 text-sm font-medium text-white/90">{title}</p>
-              <p className="mt-3 max-w-3xl text-sm leading-7 text-white/72">
-                {summary}
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <div
-          className={cn(
-            "mt-6 rounded-[24px] border p-5",
-            isFinal
-              ? "border-cyan-300/12 bg-cyan-400/[0.04]"
-              : "border-white/8 bg-black/10"
-          )}
-        >
-          <div className="prose prose-invert max-w-none prose-headings:mb-3 prose-headings:text-white prose-p:text-white/78 prose-li:text-white/75 prose-strong:text-white prose-blockquote:border-white/20 prose-blockquote:text-white/70 prose-table:block prose-table:w-full prose-table:overflow-x-auto prose-th:text-white prose-td:text-white/75">
-            <ReactMarkdown remarkPlugins={[remarkGfm]}>{content}</ReactMarkdown>
-          </div>
-        </div>
-
-        <div className="mt-6 rounded-2xl border border-white/8 bg-black/10 overflow-hidden">
-          <button
-            type="button"
-            onClick={() => setExpanded((value) => !value)}
-            className="flex w-full items-center justify-between gap-4 px-4 py-3 text-left transition hover:bg-white/[0.02]"
-          >
-            <div>
-              <p className="text-sm font-medium text-white">展开查看推演过程</p>
-              <p className="mt-1 text-xs text-white/45">
-                查看该角色在形成结论前的分析路径
-              </p>
-            </div>
-
-            <ChevronDown
-              className={cn(
-                "h-4 w-4 shrink-0 text-white/60 transition-transform duration-200",
-                expanded && "rotate-180"
-              )}
-            />
-          </button>
-
-          {expanded ? (
-            <div className="border-t border-white/8 px-4 py-4">
-              <div className="prose prose-invert max-w-none prose-headings:text-white prose-p:text-white/75 prose-li:text-white/75 prose-strong:text-white prose-blockquote:border-white/20 prose-blockquote:text-white/70 prose-table:block prose-table:w-full prose-table:overflow-x-auto prose-th:text-white prose-td:text-white/75">
-                <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                  {reasoning}
-                </ReactMarkdown>
+                <ChevronRight
+                  className={cn(
+                    "h-4 w-4 shrink-0 text-white/35 transition-transform duration-300",
+                    isActive
+                      ? "translate-x-0.5 text-cyan-100/85"
+                      : "group-hover:translate-x-0.5 group-hover:text-white/60"
+                  )}
+                />
               </div>
             </div>
-          ) : null}
+
+            <p className="mt-3 line-clamp-3 text-sm leading-6 text-white/68">
+              {summary}
+            </p>
+          </div>
         </div>
       </div>
-    </motion.article>
+    </motion.button>
   );
 }

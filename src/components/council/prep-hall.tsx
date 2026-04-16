@@ -13,8 +13,9 @@ import {
   getAssignedRoleIds,
   getRoleById,
 } from "@/lib/council";
+import type { CouncilRole, MeetingSlot } from "@/types/council";
 import type { MeetingRoleInput } from "@/types/meeting";
-import type { MeetingSlot } from "@/types/council";
+import { CreateRoleInput } from "./create-role-modal";
 import { DraggableRoleCard } from "./draggable-role-card";
 import { MeetingGrid } from "./meeting-grid";
 import { RolePool } from "./role-pool";
@@ -24,10 +25,18 @@ interface PrepHallProps {
   onStartMeeting: (input: {
     topic: string;
     roles: MeetingRoleInput[];
+    roleProfiles: CouncilRole[];
   }) => void | Promise<void>;
   isStarting?: boolean;
   errorMessage?: string;
 }
+
+const CUSTOM_ROLE_PALETTES = [
+  "from-cyan-500/24 via-sky-400/10 to-transparent",
+  "from-amber-500/24 via-orange-400/10 to-transparent",
+  "from-fuchsia-500/22 via-violet-400/10 to-transparent",
+  "from-emerald-500/24 via-teal-400/10 to-transparent",
+];
 
 export function PrepHall({
   onStartMeeting,
@@ -37,13 +46,18 @@ export function PrepHall({
   const [slots, setSlots] = useState<MeetingSlot[]>(createInitialSlots);
   const [topic, setTopic] = useState("");
   const [activeRoleId, setActiveRoleId] = useState<string | null>(null);
+  const [customRoles, setCustomRoles] = useState<CouncilRole[]>([]);
 
+  const allRoles = useMemo(
+    () => [...ROLE_LIBRARY, ...customRoles],
+    [customRoles]
+  );
   const assignedRoleIds = useMemo(() => getAssignedRoleIds(slots), [slots]);
   const selectedCount = assignedRoleIds.size;
   const canStart =
     !isStarting && selectedCount > 0 && topic.trim().length > 0;
 
-  const activeRole = getRoleById(ROLE_LIBRARY, activeRoleId);
+  const activeRole = getRoleById(allRoles, activeRoleId);
 
   function handleDragStart(event: DragStartEvent) {
     const roleId = event.active.data.current?.roleId as string | undefined;
@@ -74,56 +88,55 @@ export function PrepHall({
     );
   }
 
+  function handleCreateRole(input: CreateRoleInput) {
+    setCustomRoles((currentRoles) => {
+      const palette =
+        CUSTOM_ROLE_PALETTES[currentRoles.length % CUSTOM_ROLE_PALETTES.length];
+
+      const nextRole: CouncilRole = {
+        id: `custom-${Date.now()}-${currentRoles.length}`,
+        name: input.name,
+        title: "用户构建意识体",
+        bias: "custom",
+        description: input.prompt,
+        avatar: input.avatar,
+        color: palette,
+        prompt: input.prompt,
+      };
+
+      return [...currentRoles, nextRole];
+    });
+  }
+
   function handleStart() {
-    const selectedRoles = slots
-      .map((slot) => getRoleById(ROLE_LIBRARY, slot.roleId))
-      .filter(Boolean)
-      .map((role) => ({
-        id: role!.id,
-        name: role!.name,
-        prompt: `${role!.title}。${role!.description}`,
-      }));
+    const selectedRoleProfiles = slots
+      .map((slot) => getRoleById(allRoles, slot.roleId))
+      .filter((role): role is CouncilRole => Boolean(role));
+
+    const selectedRoles = selectedRoleProfiles.map((role) => ({
+      id: role.id,
+      name: role.name,
+      prompt: role.prompt ?? `${role.title}。${role.description}`,
+    }));
 
     onStartMeeting({
       topic: topic.trim(),
       roles: selectedRoles,
+      roleProfiles: selectedRoleProfiles,
     });
   }
 
   return (
-    <main className="flex flex-1 flex-col">
-      <section className="pt-8 md:pt-12">
-        <div className="max-w-3xl">
-          <div className="mb-4 inline-flex items-center rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[11px] uppercase tracking-[0.24em] text-white/60 backdrop-blur-md">
-            AI Council / Pre-Meeting Chamber
-          </div>
-
-          <h1 className="text-4xl font-semibold tracking-tight text-white md:text-6xl md:leading-[1.05]">
-            AI 议事厅
-          </h1>
-
-          <p className="mt-5 max-w-2xl text-sm leading-7 text-white/65 md:text-base">
-            选择不同立场的 AI 角色加入会议，让它们围绕同一议题展开深度辩论、举证与互相拆台，
-            最终由裁判长综合所有意见，输出可执行的折中方案。
-          </p>
-
-          {errorMessage ? (
-            <div className="mt-5 rounded-2xl border border-rose-300/18 bg-rose-400/[0.06] px-4 py-3 text-sm text-rose-100/90">
-              会议启动失败：{errorMessage}
-            </div>
-          ) : null}
-        </div>
-      </section>
+    <main className="relative flex min-h-screen flex-col overflow-hidden bg-[#030711] text-white">
+      <div className="pointer-events-none absolute inset-0">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(34,211,238,0.12),transparent_34%),radial-gradient(circle_at_bottom,rgba(56,189,248,0.12),transparent_28%)]" />
+        <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-cyan-400/35 to-transparent" />
+        <div className="absolute left-1/2 top-[18%] h-[520px] w-[520px] -translate-x-1/2 rounded-full bg-cyan-400/6 blur-3xl" />
+      </div>
 
       <DndContext onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
-        <section className="mt-10 grid gap-8 lg:grid-cols-[1.15fr_0.85fr]">
-          <div className="space-y-5">
-            <MeetingGrid
-              slots={slots}
-              roles={ROLE_LIBRARY}
-              onRemoveRole={handleRemoveRole}
-            />
-
+        <div className="relative z-10 flex flex-1 flex-col px-4 pb-[22rem] pt-6 sm:px-6 lg:px-10 lg:pb-[24rem]">
+          <section className="mx-auto w-full max-w-6xl">
             <TopicInput
               value={topic}
               onChange={setTopic}
@@ -132,10 +145,28 @@ export function PrepHall({
               onStart={handleStart}
               isStarting={isStarting}
             />
-          </div>
 
-          <RolePool roles={ROLE_LIBRARY} assignedRoleIds={assignedRoleIds} />
-        </section>
+            {errorMessage ? (
+              <div className="mt-4 rounded-[24px] border border-rose-400/25 bg-rose-500/10 px-5 py-4 text-sm text-rose-100/90 shadow-[0_0_30px_rgba(244,63,94,0.08)] backdrop-blur-xl">
+                议事厅初始化失败：{errorMessage}
+              </div>
+            ) : null}
+          </section>
+
+          <section className="mx-auto flex w-full max-w-7xl flex-1 items-center justify-center py-10 md:py-14">
+            <MeetingGrid
+              slots={slots}
+              roles={allRoles}
+              onRemoveRole={handleRemoveRole}
+            />
+          </section>
+        </div>
+
+        <RolePool
+          roles={allRoles}
+          assignedRoleIds={assignedRoleIds}
+          onCreateRole={handleCreateRole}
+        />
 
         <DragOverlay>
           {activeRole ? <DraggableRoleCard role={activeRole} overlay /> : null}
@@ -144,7 +175,3 @@ export function PrepHall({
     </main>
   );
 }
-
-
-
-

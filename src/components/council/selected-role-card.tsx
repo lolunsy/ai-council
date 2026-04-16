@@ -6,6 +6,11 @@ interface SelectedRoleCardProps {
   onRemove: () => void;
 }
 
+function getBiasLabel(role: CouncilRole) {
+  if (role.id.startsWith("custom-")) return "CUSTOM";
+  return role.bias.toUpperCase();
+}
+
 export function SelectedRoleCard({
   role,
   onRemove,
@@ -36,7 +41,7 @@ export function SelectedRoleCard({
               <div className="flex flex-wrap items-center gap-2">
                 <h3 className="text-sm font-semibold text-white">{role.name}</h3>
                 <span className="rounded-full border border-white/10 bg-white/10 px-2 py-0.5 text-[10px] uppercase tracking-[0.18em] text-white/70">
-                  {role.bias}
+                  {getBiasLabel(role)}
                 </span>
               </div>
 
@@ -62,4 +67,3 @@ export function SelectedRoleCard({
     </div>
   );
 }
-

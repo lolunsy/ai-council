@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { ROLE_LIBRARY } from "@/data/roles";
+import type { CouncilRole } from "@/types/council";
 import { cn } from "@/lib/utils";
 
 interface MeetingMiniBarProps {
@@ -9,7 +9,7 @@ interface MeetingMiniBarProps {
   statusText: string;
   visibleCount: number;
   totalCount: number;
-  participantRoleIds: string[];
+  participants: CouncilRole[];
   activeRoleId?: string | null;
 }
 
@@ -18,13 +18,9 @@ export function MeetingMiniBar({
   statusText,
   visibleCount,
   totalCount,
-  participantRoleIds,
+  participants,
   activeRoleId = null,
 }: MeetingMiniBarProps) {
-  const roles = participantRoleIds
-    .map((roleId) => ROLE_LIBRARY.find((role) => role.id === roleId))
-    .filter(Boolean);
-
   return (
     <motion.div
       initial={{ opacity: 0, y: -12 }}
@@ -58,23 +54,23 @@ export function MeetingMiniBar({
           </div>
 
           <div className="flex shrink-0 items-center gap-2">
-            {roles.map((role) => (
+            {participants.map((role) => (
               <div
-                key={role!.id}
+                key={role.id}
                 className={cn(
                   "relative flex h-10 w-10 items-center justify-center rounded-xl border border-white/10 bg-black/20 text-base transition-all duration-200",
-                  role!.id === activeRoleId &&
+                  role.id === activeRoleId &&
                     "scale-110 border-cyan-300/30 bg-cyan-400/12 shadow-[0_0_0_1px_rgba(103,232,249,0.18)_inset,0_8px_20px_rgba(6,182,212,0.14)]"
                 )}
-                title={role!.name}
+                title={role.name}
               >
                 <div
                   className={cn(
                     "pointer-events-none absolute inset-0 rounded-xl bg-gradient-to-br opacity-70",
-                    role!.color
+                    role.color
                   )}
                 />
-                <span className="relative z-10">{role!.avatar}</span>
+                <span className="relative z-10">{role.avatar}</span>
               </div>
             ))}
           </div>

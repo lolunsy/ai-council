@@ -4,7 +4,8 @@ export type RoleBias =
   | "legal"
   | "marketing"
   | "strategy"
-  | "operations";
+  | "operations"
+  | "custom";
 
 export interface CouncilRole {
   id: string;
@@ -14,6 +15,7 @@ export interface CouncilRole {
   description: string;
   avatar: string;
   color: string;
+  prompt?: string;
 }
 
 export interface MeetingSlot {
