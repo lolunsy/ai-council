@@ -15,7 +15,7 @@ import {
 } from "@/lib/council";
 import type { CouncilRole, MeetingSlot } from "@/types/council";
 import type { MeetingRoleInput } from "@/types/meeting";
-import { CreateRoleInput } from "./create-role-modal";
+import { type CreateRoleInput } from "./create-role-modal";
 import { DraggableRoleCard } from "./draggable-role-card";
 import { MeetingGrid } from "./meeting-grid";
 import { RolePool } from "./role-pool";
@@ -127,39 +127,29 @@ export function PrepHall({
   }
 
   return (
-    <main className="relative flex min-h-screen flex-col overflow-hidden bg-[#030711] text-white">
-      <div className="pointer-events-none absolute inset-0">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(34,211,238,0.12),transparent_34%),radial-gradient(circle_at_bottom,rgba(56,189,248,0.12),transparent_28%)]" />
-        <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-cyan-400/35 to-transparent" />
-        <div className="absolute left-1/2 top-[18%] h-[520px] w-[520px] -translate-x-1/2 rounded-full bg-cyan-400/6 blur-3xl" />
-      </div>
-
+    <main className="relative flex flex-col items-center pt-10 pb-[360px] min-h-screen overflow-x-hidden">
       <DndContext onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
-        <div className="relative z-10 flex flex-1 flex-col px-4 pb-[22rem] pt-6 sm:px-6 lg:px-10 lg:pb-[24rem]">
-          <section className="mx-auto w-full max-w-6xl">
-            <TopicInput
-              value={topic}
-              onChange={setTopic}
-              selectedCount={selectedCount}
-              canStart={canStart}
-              onStart={handleStart}
-              isStarting={isStarting}
-            />
+        <div className="relative z-10 w-full max-w-5xl flex flex-col gap-10 items-center">
+          <MeetingGrid
+            slots={slots}
+            roles={allRoles}
+            onRemoveRole={handleRemoveRole}
+          />
 
-            {errorMessage ? (
-              <div className="mt-4 rounded-[24px] border border-rose-400/25 bg-rose-500/10 px-5 py-4 text-sm text-rose-100/90 shadow-[0_0_30px_rgba(244,63,94,0.08)] backdrop-blur-xl">
-                议事厅初始化失败：{errorMessage}
-              </div>
-            ) : null}
-          </section>
+          <TopicInput
+            value={topic}
+            onChange={setTopic}
+            selectedCount={selectedCount}
+            canStart={canStart}
+            onStart={handleStart}
+            isStarting={isStarting}
+          />
 
-          <section className="mx-auto flex w-full max-w-7xl flex-1 items-center justify-center py-10 md:py-14">
-            <MeetingGrid
-              slots={slots}
-              roles={allRoles}
-              onRemoveRole={handleRemoveRole}
-            />
-          </section>
+          {errorMessage ? (
+            <div className="w-full max-w-3xl rounded-2xl border border-rose-400/25 bg-rose-500/10 px-5 py-4 text-sm text-rose-100/90 backdrop-blur-xl">
+              议事厅初始化失败：{errorMessage}
+            </div>
+          ) : null}
         </div>
 
         <RolePool

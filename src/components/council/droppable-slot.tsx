@@ -3,7 +3,6 @@
 import { useDroppable } from "@dnd-kit/core";
 import type { CouncilRole } from "@/types/council";
 import { cn } from "@/lib/utils";
-import { SelectedRoleCard } from "./selected-role-card";
 
 interface DroppableSlotProps {
   slotId: string;
@@ -30,51 +29,47 @@ export function DroppableSlot({
     <div
       ref={setNodeRef}
       className={cn(
-        "relative flex w-[180px] min-h-[260px] shrink-0 items-center justify-center overflow-hidden rounded-[32px] border border-dashed p-4 backdrop-blur-xl transition-all duration-300",
+        "w-[160px] h-[240px] shrink-0 rounded-2xl border-2 flex flex-col items-center justify-center transition-all duration-300 relative overflow-hidden",
         role
-          ? "border-white/14 bg-white/[0.05] shadow-[0_20px_80px_rgba(0,0,0,0.22)]"
-          : "border-white/12 bg-black/25",
+          ? "border-solid border-cyan-500/40 bg-cyan-950/20"
+          : "border-dashed border-cyan-500/30 bg-cyan-900/10 hover:bg-cyan-900/20",
         isOver &&
-          "scale-[1.02] border-cyan-300/50 bg-cyan-400/[0.09] ring-2 ring-cyan-400 shadow-[0_0_30px_rgba(34,211,238,0.3)]"
+          "border-solid border-cyan-400 bg-cyan-400/20 shadow-[0_0_30px_rgba(34,211,238,0.3)] scale-105"
       )}
     >
-      <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(255,255,255,0.05),transparent_24%,transparent_76%,rgba(34,211,238,0.12))]" />
-
-      <div className="absolute left-1/2 top-4 -translate-x-1/2 rounded-full border border-white/10 bg-black/40 px-3 py-1 text-[10px] uppercase tracking-[0.28em] text-white/55">
-        Pod {index + 1}
+      <div className="absolute left-3 top-3 rounded-full border border-cyan-500/20 bg-black/30 px-2 py-1 text-[10px] uppercase tracking-[0.2em] text-cyan-400/60">
+        Seat {index + 1}
       </div>
 
-      <div className="relative z-10 flex min-h-[210px] w-full items-center justify-center pt-8">
+      <div className="relative z-10 flex h-full w-full items-center justify-center p-3 pt-10">
         {role ? (
-          <SelectedRoleCard role={role} onRemove={onRemove} />
-        ) : (
-          <div className="flex min-h-[190px] flex-col items-center justify-center text-center">
-            <div
-              className={cn(
-                "mb-4 flex h-14 w-14 items-center justify-center rounded-[20px] border border-white/12 bg-black/25 text-2xl text-white/60 transition-all duration-300",
-                isOver && "border-cyan-300/35 bg-cyan-400/12 text-cyan-100"
-              )}
-            >
-              +
+          <div className="flex h-full w-full flex-col items-center justify-between rounded-xl border border-cyan-400/20 bg-black/30 p-3 text-center">
+            <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-cyan-400/20 bg-cyan-950/30 text-2xl">
+              {role.avatar}
             </div>
-            <p
-              className={cn(
-                "text-sm font-medium tracking-[0.08em] transition-colors duration-300",
-                isOver ? "text-cyan-100" : "text-white/72"
-              )}
+
+            <div className="space-y-2">
+              <p className="text-sm font-semibold text-white">{role.name}</p>
+              <p className="line-clamp-2 text-xs leading-5 text-white/65">
+                {role.title}
+              </p>
+            </div>
+
+            <button
+              type="button"
+              onClick={onRemove}
+              className="rounded-full border border-cyan-400/20 bg-cyan-950/30 px-3 py-1 text-xs text-cyan-100/80 transition hover:bg-cyan-900/40"
             >
-              {isOver ? "释放角色以完成接入" : "拖入意识体"}
+              移除
+            </button>
+          </div>
+        ) : (
+          <div className="flex flex-col items-center justify-center text-center">
+            <div className="text-5xl text-cyan-400/60">+</div>
+            <p className="mt-4 text-sm text-cyan-400/60">
+              {isOver ? "释放角色" : "拖入角色"}
             </p>
-            <p
-              className={cn(
-                "mt-2 max-w-[140px] text-xs leading-5 transition-colors duration-300",
-                isOver ? "text-cyan-100/75" : "text-white/42"
-              )}
-            >
-              {isOver
-                ? "全息培养舱已锁定，等待同步。"
-                : "空白底座正在等待新的参会角色。"}
-            </p>
+            <p className="mt-2 text-xs text-cyan-400/60">全息底座待命中</p>
           </div>
         )}
       </div>

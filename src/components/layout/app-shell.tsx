@@ -7,6 +7,8 @@ interface AppShellProps {
 export function AppShell({ children }: AppShellProps) {
   return (
     <div className="relative min-h-screen overflow-hidden bg-[#07111f] text-white">
+      <div className="absolute top-[10%] left-1/2 -translate-x-1/2 w-[800px] h-[500px] bg-cyan-600/15 blur-[120px] rounded-full pointer-events-none" />
+
       <div className="pointer-events-none absolute inset-0">
         <div className="absolute left-1/2 top-[-180px] h-[420px] w-[420px] -translate-x-1/2 rounded-full bg-cyan-400/12 blur-3xl" />
         <div className="absolute bottom-[-160px] left-[10%] h-[300px] w-[300px] rounded-full bg-fuchsia-500/10 blur-3xl" />
